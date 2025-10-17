@@ -1,16 +1,21 @@
-# Requirements for Squish XML Viewer Desktop Application
-# Core dependency for creating desktop application with webview
-pywebview>=4.0.0
+# Requirements for Squish Snapshot Viewer Desktop Application
+# Hybrid PyQt5 + WebEngine implementation
 
-# Optional: For better packaging
+# Core GUI framework
+PyQt5>=5.15.0
+
+# Web engine for HTML rendering
+PyQtWebEngine>=5.15.0
+
+# Optional: For better packaging and distribution
 # pyinstaller>=5.0.0  # For creating standalone executables
 
 # Python standard library modules used (no installation needed):
-# - xml.etree.ElementTree
-# - base64  
-# - html
-# - os
-# - sys
-# - tempfile
-# - threading
-# - webbrowser (fallback)
+# - xml.etree.ElementTree  # XML parsing
+# - base64                 # Image encoding/decoding  
+# - html                   # HTML escaping
+# - os, sys               # System operations
+# - tempfile              # Temporary file handling
+# - json                  # Data serialization
+# - pathlib               # Path operations
+# - webbrowser            # External browser fallback
