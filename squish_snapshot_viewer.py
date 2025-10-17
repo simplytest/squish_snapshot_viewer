@@ -1,15 +1,20 @@
 #!/usr/bin/env python3
 """
-squish_xml_hybrid_viewer.py
+squish_snapshot_viewer.py
 
-Hybride Desktop-App für Squish XML Viewer
-- Python: File-Handling, Ordner-Management, HTML-Generierung
-- WebView: Anzeige der generierten HTML-Datei (nutzt die perfekt funktionierende HTML-Version)
+Cross-Platform Desktop-App für Squish XML Snapshots
+- PyQt5 + WebEngine Implementation
+- Tree, Screenshot und Properties Viewer
+- Native Menüs für jede Plattform
 
-Layout:
-- Oben: Menüleiste 
-- Links: Datei-Liste (XML-Dateien)
-- Rechts: WebView mit generierter HTML-Datei
+Requirements installieren:
+    pip install -r requirements.txt
+
+Verwendung:
+    python3 squish_snapshot_viewer.py [xml-file-or-folder]
+
+Author: AI Assistant
+Created: 2024
 """
 
 import sys
@@ -18,6 +23,7 @@ import xml.etree.ElementTree as ET
 import base64
 import tempfile
 import json
+import platform
 from pathlib import Path
 
 try:
@@ -31,20 +37,18 @@ try:
     from PyQt5.QtGui import QFont, QIcon
     from PyQt5.QtWebEngineWidgets import QWebEngineView
     PYQT_AVAILABLE = True
-except ImportError:
-    PYQT_AVAILABLE = False
+except ImportError as e:
+    print("❌ PyQt5 oder WebEngine nicht verfügbar!")
+    print("� Bitte installieren Sie: pip install -r requirements.txt")
+    print(f"   Fehler: {e}")
+    sys.exit(1)
 
 
-class SquishXMLHybridViewer(QMainWindow):
-    """Hybride XML-Viewer App - Python + WebView"""
+class SquishSnapshotViewer(QMainWindow):
+    """Cross-Platform Squish Snapshot Viewer - PyQt5 + WebView"""
     
     def __init__(self):
         super().__init__()
-        
-        if not PYQT_AVAILABLE:
-            print("❌ PyQt5 und QWebEngineWidgets nicht verfügbar!")
-            print("Installieren Sie: pip install PyQt5 PyQtWebEngine")
-            sys.exit(1)
         
         self.xml_files = []  # Liste der geladenen XML-Dateien
         self.current_xml_file = None
@@ -111,11 +115,17 @@ class SquishXMLHybridViewer(QMainWindow):
         self.statusBar().showMessage("Ready - Open file or folder")
     
     def create_menu(self):
-        """Menüleiste erstellen"""
+        """Menüleiste erstellen - plattformspezifisch optimiert"""
         menubar = self.menuBar()
         
-        # macOS: Native Menüleiste verwenden (oben in der Systemleiste)
-        menubar.setNativeMenuBar(True)
+        # Plattformspezifische Menüleisten-Konfiguration
+        system = platform.system().lower()
+        if system == "darwin":  # macOS
+            menubar.setNativeMenuBar(True)
+            print("🍎 macOS: Native Menüleiste aktiviert")
+        else:  # Linux/Windows
+            menubar.setNativeMenuBar(False)
+            print(f"🖥️  {system}: Standard-Menüleiste verwendet")
         
         # Datei-Menü
         file_menu = menubar.addMenu('&File')
@@ -166,17 +176,20 @@ class SquishXMLHybridViewer(QMainWindow):
         # Hilfe-Menü
         help_menu = menubar.addMenu('&Help')
         
-        # Über
+        # Über-Dialog
         about_action = QAction('&About Squish Snapshot Viewer', self)
-        about_action.setMenuRole(QAction.AboutRole)  # macOS-spezifische Rolle
+        # Für macOS: AboutRole verwenden, für andere: normal lassen
+        if system == "darwin":
+            about_action.setMenuRole(QAction.AboutRole)
         about_action.triggered.connect(self.show_about)
         help_menu.addAction(about_action)
         
-        # Zusätzlicher Help-Eintrag für Sichtbarkeit
-        help_action = QAction('&Help Documentation', self)
-        help_action.setShortcut('F1')
-        help_action.triggered.connect(self.show_about)
-        help_menu.addAction(help_action)
+        # Zusätzlicher Help-Eintrag (nur für nicht-macOS)
+        if system != "darwin":
+            help_action = QAction('&Help', self)
+            help_action.setShortcut('F1')
+            help_action.triggered.connect(self.show_about)
+            help_menu.addAction(help_action)
     
     def create_file_list_panel(self, parent_splitter):
         """Dateiliste-Panel erstellen (links)"""
@@ -290,15 +303,22 @@ class SquishXMLHybridViewer(QMainWindow):
         layout.addWidget(self.webview)
     
     def load_welcome_page(self):
-        """Willkommensseite laden"""
-        welcome_html = """
+        """Willkommensseite laden mit Plattform-Info"""
+        system_name = platform.system()
+        platform_emoji = {
+            'Darwin': '🍎',
+            'Linux': '🐧', 
+            'Windows': '🪟'
+        }.get(system_name, '💻')
+        
+        welcome_html = f"""
         <!DOCTYPE html>
         <html>
         <head>
             <meta charset="UTF-8">
             <title>Squish Snapshot Viewer</title>
             <style>
-                body {
+                body {{
                     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
                     background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
                     margin: 0;
@@ -308,48 +328,57 @@ class SquishXMLHybridViewer(QMainWindow):
                     align-items: center;
                     min-height: 100vh;
                     color: white;
-                }
-                .welcome-container {
+                }}
+                .welcome-container {{
                     text-align: center;
                     background: rgba(255, 255, 255, 0.1);
                     padding: 60px 40px;
                     border-radius: 20px;
                     backdrop-filter: blur(10px);
                     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-                }
-                h1 {
+                }}
+                h1 {{
                     font-size: 3em;
                     margin-bottom: 20px;
                     font-weight: 300;
-                }
-                .subtitle {
+                }}
+                .subtitle {{
                     font-size: 1.2em;
                     margin-bottom: 40px;
                     opacity: 0.9;
-                }
-                .feature {
+                }}
+                .feature {{
                     margin: 15px 0;
                     font-size: 1.1em;
-                }
-                .icon {
+                }}
+                .icon {{
                     font-size: 2em;
                     margin-bottom: 20px;
-                }
+                }}
+                .platform-info {{
+                    font-size: 0.9em;
+                    opacity: 0.7;
+                    margin-top: 30px;
+                    padding: 15px;
+                    background: rgba(255, 255, 255, 0.1);
+                    border-radius: 10px;
+                }}
             </style>
         </head>
         <body>
             <div class="welcome-container">
                 <div class="icon">🔍</div>
                 <h1>Squish Snapshot Viewer</h1>
-                <div class="subtitle">Moderne Hybride Anwendung</div>
+                <div class="subtitle">Cross-Platform Hybride Anwendung</div>
                 
                 <div class="feature">📄 XML-Datei öffnen (Ctrl+O)</div>
                 <div class="feature">📁 Ordner öffnen (Ctrl+Shift+O)</div>
                 <div class="feature">🌐 HTML-Darstellung mit WebView</div>
                 <div class="feature">🔍 Element-Overlays und Navigation</div>
+                <div class="feature">🛠️ pip install -r requirements.txt</div>
                 
-                <br><br>
-                <div style="opacity: 0.7; font-size: 0.9em;">
+                <div class="platform-info">
+                    {platform_emoji} Läuft auf {system_name}<br>
                     Wählen Sie eine XML-Datei aus der Liste links<br>
                     oder nutzen Sie das Datei-Menü
                 </div>
@@ -1626,15 +1655,25 @@ document.addEventListener('contextmenu', function(e) {
             QMessageBox.information(self, "Info", "Keine HTML-Datei zum Öffnen verfügbar")
     
     def show_about(self):
-        """About-Dialog als Popup anzeigen"""
+        """About-Dialog als Popup anzeigen mit Plattform-Info"""
         from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton
         from PyQt5.QtCore import Qt
         from PyQt5.QtGui import QFont
+        from PyQt5 import QtCore
+        
+        # Systeminfo sammeln
+        system_info = {
+            'platform': platform.system(),
+            'release': platform.release(),
+            'architecture': platform.architecture()[0],
+            'python_version': f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
+            'pyqt_version': QtCore.PYQT_VERSION_STR if hasattr(QtCore, 'PYQT_VERSION_STR') else 'Unknown'
+        }
         
         # Popup-Dialog erstellen
         dialog = QDialog(self)
         dialog.setWindowTitle("About Squish Snapshot Viewer")
-        dialog.setFixedSize(500, 700)
+        dialog.setFixedSize(520, 750)
         dialog.setStyleSheet("""
             QDialog {
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:1, 
@@ -1672,33 +1711,51 @@ document.addEventListener('contextmenu', function(e) {
         title.setFont(QFont("Arial", 24, QFont.Bold))
         layout.addWidget(title)
         
-        # Version
-        version = QLabel("Hybrid Desktop Application v1.0")
+        # Version mit Plattform-Info
+        version_text = f"Cross-Platform Desktop Application v1.2\n"
+        version_text += f"Simple • {system_info['platform']} {system_info['release']}"
+        version = QLabel(version_text)
         version.setAlignment(Qt.AlignCenter)
         version.setStyleSheet("font-size: 14px; opacity: 0.8; margin-bottom: 20px;")
         layout.addWidget(version)
         
+        # System-Informationen
+        system_title = QLabel("💻 System Information")
+        system_title.setFont(QFont("Arial", 16, QFont.Bold))
+        system_title.setStyleSheet("margin-top: 15px; margin-bottom: 10px;")
+        layout.addWidget(system_title)
+        
+        system_text = QLabel(
+            f"Platform: {system_info['platform']} ({system_info['architecture']})\n"
+            f"Python: {system_info['python_version']}\n"
+            f"PyQt5: {system_info['pyqt_version']}\n"
+            f"Manual Setup: ✅ pip install -r requirements.txt"
+        )
+        system_text.setStyleSheet("font-size: 11px; font-family: monospace; background: rgba(255,255,255,0.1); padding: 12px; border-radius: 8px;")
+        layout.addWidget(system_text)
+        
         # Features
         features_title = QLabel("✨ Features")
         features_title.setFont(QFont("Arial", 16, QFont.Bold))
-        features_title.setStyleSheet("margin-top: 20px; margin-bottom: 10px;")
+        features_title.setStyleSheet("margin-top: 15px; margin-bottom: 10px;")
         layout.addWidget(features_title)
         
         features_text = QLabel(
+            "• Clean cross-platform implementation\n"
             "• Three-panel layout with Tree, Screenshot and Properties\n"
             "• Search and filter functionality\n"
             "• Screenshot overlays for UI elements\n"
             "• Context menus with clipboard integration\n"
             "• HTML export and browser view\n"
-            "• Native macOS menu integration"
+            "• Platform-optimized native menus"
         )
         features_text.setStyleSheet("font-size: 12px; line-height: 1.4; background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px;")
         layout.addWidget(features_text)
         
         # Shortcuts
-        shortcuts_title = QLabel("✨ Keyboard Shortcuts")
+        shortcuts_title = QLabel("⌨️ Keyboard Shortcuts")
         shortcuts_title.setFont(QFont("Arial", 16, QFont.Bold))
-        shortcuts_title.setStyleSheet("margin-top: 20px; margin-bottom: 10px;")
+        shortcuts_title.setStyleSheet("margin-top: 15px; margin-bottom: 10px;")
         layout.addWidget(shortcuts_title)
         
         shortcuts_text = QLabel(
@@ -1709,7 +1766,7 @@ document.addEventListener('contextmenu', function(e) {
             "Ctrl+B     Open in Browser\n"
             "Ctrl+Q     Quit"
         )
-        shortcuts_text.setStyleSheet("font-size: 12px; font-family: monospace; background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px;")
+        shortcuts_text.setStyleSheet("font-size: 11px; font-family: monospace; background: rgba(255,255,255,0.1); padding: 12px; border-radius: 8px;")
         layout.addWidget(shortcuts_text)
         
         # Footer
@@ -1757,7 +1814,7 @@ def main():
         }
     """)
     
-    viewer = SquishXMLHybridViewer()
+    viewer = SquishSnapshotViewer()
     viewer.show()
     
     sys.exit(app.exec_())
