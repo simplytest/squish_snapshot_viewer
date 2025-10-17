@@ -77,6 +77,9 @@ class SquishXMLHybridViewer(QMainWindow):
         # Menüleiste erstellen
         self.create_menu()
         
+        # Toolbar erstellen
+        self.create_toolbar()
+        
         # Horizontal Splitter: Links Dateiliste, Rechts WebView
         splitter = QSplitter(Qt.Horizontal)
         main_layout.addWidget(splitter)
@@ -96,6 +99,9 @@ class SquishXMLHybridViewer(QMainWindow):
     def create_menu(self):
         """Menüleiste erstellen"""
         menubar = self.menuBar()
+        
+        # macOS: Menü im Fenster anzeigen (nicht in globaler Menüleiste)
+        menubar.setNativeMenuBar(False)
         
         # Datei-Menü
         file_menu = menubar.addMenu('&Datei')
@@ -142,6 +148,58 @@ class SquishXMLHybridViewer(QMainWindow):
         open_browser_action.setShortcut('Ctrl+B')
         open_browser_action.triggered.connect(self.open_in_browser)
         view_menu.addAction(open_browser_action)
+        
+        # Hilfe-Menü
+        help_menu = menubar.addMenu('&Hilfe')
+        
+        # Über
+        about_action = QAction('&Über Squish XML Viewer', self)
+        about_action.triggered.connect(self.show_about)
+        help_menu.addAction(about_action)
+    
+    def create_toolbar(self):
+        """Toolbar mit wichtigen Aktionen erstellen"""
+        toolbar = self.addToolBar('Hauptaktionen')
+        toolbar.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
+        
+        # XML-Datei öffnen
+        open_file_action = QAction('📄 Datei öffnen', self)
+        open_file_action.setShortcut('Ctrl+O')
+        open_file_action.setToolTip('XML-Datei öffnen (Ctrl+O)')
+        open_file_action.triggered.connect(self.open_xml_file)
+        toolbar.addAction(open_file_action)
+        
+        # Ordner öffnen
+        open_folder_action = QAction('📁 Ordner öffnen', self)
+        open_folder_action.setShortcut('Ctrl+Shift+O') 
+        open_folder_action.setToolTip('Ordner öffnen (Ctrl+Shift+O)')
+        open_folder_action.triggered.connect(self.open_xml_folder)
+        toolbar.addAction(open_folder_action)
+        
+        toolbar.addSeparator()
+        
+        # Liste leeren
+        clear_action = QAction('🗑️ Liste leeren', self)
+        clear_action.setShortcut('Ctrl+L')
+        clear_action.setToolTip('Dateiliste leeren (Ctrl+L)')
+        clear_action.triggered.connect(self.clear_file_list)
+        toolbar.addAction(clear_action)
+        
+        toolbar.addSeparator()
+        
+        # WebView neu laden
+        reload_action = QAction('🔄 Neu laden', self)
+        reload_action.setShortcut('F5')
+        reload_action.setToolTip('WebView neu laden (F5)')
+        reload_action.triggered.connect(self.reload_webview)
+        toolbar.addAction(reload_action)
+        
+        # Browser öffnen
+        browser_action = QAction('🌐 Browser', self)
+        browser_action.setShortcut('Ctrl+B')
+        browser_action.setToolTip('In externem Browser öffnen (Ctrl+B)')
+        browser_action.triggered.connect(self.open_in_browser)
+        toolbar.addAction(browser_action)
     
     def create_file_list_panel(self, parent_splitter):
         """Dateiliste-Panel erstellen (links)"""
@@ -170,45 +228,6 @@ class SquishXMLHybridViewer(QMainWindow):
         """)
         layout.addWidget(header)
         
-        # Buttons für schnellen Zugriff
-        button_layout = QHBoxLayout()
-        
-        self.open_file_btn = QPushButton("📄 Datei")
-        self.open_file_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #0366d6;
-                color: white;
-                border: none;
-                padding: 6px 12px;
-                border-radius: 4px;
-                font-size: 12px;
-            }
-            QPushButton:hover {
-                background-color: #0256cc;
-            }
-        """)
-        self.open_file_btn.clicked.connect(self.open_xml_file)
-        button_layout.addWidget(self.open_file_btn)
-        
-        self.open_folder_btn = QPushButton("📁 Ordner")
-        self.open_folder_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #28a745;
-                color: white;
-                border: none;
-                padding: 6px 12px;
-                border-radius: 4px;
-                font-size: 12px;
-            }
-            QPushButton:hover {
-                background-color: #218838;
-            }
-        """)
-        self.open_folder_btn.clicked.connect(self.open_xml_folder)
-        button_layout.addWidget(self.open_folder_btn)
-        
-        layout.addLayout(button_layout)
-        
         # Dateiliste
         self.file_list = QListWidget()
         self.file_list.setStyleSheet("""
@@ -233,13 +252,21 @@ class SquishXMLHybridViewer(QMainWindow):
         self.file_list.itemClicked.connect(self.on_file_selected)
         layout.addWidget(self.file_list)
         
-        # Info-Label
-        self.info_label = QLabel("Keine XML-Dateien geladen")
+        # Info-Text für leere Liste
+        self.info_label = QLabel("Keine XML-Dateien geladen.\n\nVerwenden Sie das Datei-Menü zum Öffnen von:\n• XML-Dateien (Strg+O)\n• Ordnern (Strg+Shift+O)")
         self.info_label.setStyleSheet("""
-            color: #586069;
-            font-size: 12px;
-            padding: 8px 0;
+            QLabel {
+                color: #586069;
+                font-size: 12px;
+                padding: 20px;
+                text-align: center;
+                background-color: #f8f9fa;
+                border: 1px dashed #dee2e6;
+                border-radius: 4px;
+                margin: 10px 0;
+            }
         """)
+        self.info_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.info_label)
     
     def create_webview_panel(self, parent_splitter):
@@ -449,11 +476,14 @@ class SquishXMLHybridViewer(QMainWindow):
         # Info-Label aktualisieren
         count = len(self.xml_files)
         if count == 0:
-            self.info_label.setText("Keine XML-Dateien geladen")
+            self.info_label.setText("Keine XML-Dateien geladen.\n\nVerwenden Sie das Datei-Menü zum Öffnen von:\n• XML-Dateien (Strg+O)\n• Ordnern (Strg+Shift+O)")
+            self.info_label.show()
         elif count == 1:
             self.info_label.setText("1 XML-Datei geladen")
+            self.info_label.hide()
         else:
             self.info_label.setText(f"{count} XML-Dateien geladen")
+            self.info_label.hide()
     
     def select_file_in_list(self, file_path):
         """Datei in der Liste auswählen"""
@@ -1448,6 +1478,37 @@ document.addEventListener('contextmenu', function(e) {
         else:
             QMessageBox.information(self, "Info", "Keine HTML-Datei zum Öffnen verfügbar")
     
+    def show_about(self):
+        """Über-Dialog anzeigen"""
+        about_text = """
+        <h3>Squish XML Hybrid Viewer</h3>
+        
+        <p>Eine hybride Desktop-Anwendung zur Anzeige von Squish XML-Dateien.</p>
+        
+        <p><b>Features:</b></p>
+        <ul>
+        <li>Dreipanel-Layout mit Tree, Screenshot und Properties</li>
+        <li>Such- und Filterfunktionen</li>
+        <li>Screenshot-Overlays für UI-Elemente</li>
+        <li>Kontextmenüs mit Clipboard-Integration</li>
+        <li>HTML-Export und Browser-Ansicht</li>
+        </ul>
+        
+        <p><b>Tastenkürzel:</b></p>
+        <ul>
+        <li><b>Strg+O:</b> XML-Datei öffnen</li>
+        <li><b>Strg+Shift+O:</b> Ordner öffnen</li>
+        <li><b>Strg+L:</b> Liste leeren</li>
+        <li><b>F5:</b> WebView neu laden</li>
+        <li><b>Strg+B:</b> In Browser öffnen</li>
+        <li><b>Strg+Q:</b> Beenden</li>
+        </ul>
+        
+        <p><small>Powered by PyQt5 + QWebEngineView</small></p>
+        """
+        
+        QMessageBox.about(self, "Über Squish XML Viewer", about_text)
+
     def closeEvent(self, event):
         """Anwendung schließen - Aufräumen"""
         if self.temp_html_file:
