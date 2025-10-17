@@ -77,9 +77,6 @@ class SquishXMLHybridViewer(QMainWindow):
         # Menüleiste erstellen
         self.create_menu()
         
-        # Toolbar erstellen
-        self.create_toolbar()
-        
         # Horizontal Splitter: Links Dateiliste, Rechts WebView
         splitter = QSplitter(Qt.Horizontal)
         main_layout.addWidget(splitter)
@@ -100,8 +97,8 @@ class SquishXMLHybridViewer(QMainWindow):
         """Menüleiste erstellen"""
         menubar = self.menuBar()
         
-        # macOS: Menü im Fenster anzeigen (nicht in globaler Menüleiste)
-        menubar.setNativeMenuBar(False)
+        # macOS: Native Menüleiste verwenden (oben in der Systemleiste)
+        menubar.setNativeMenuBar(True)
         
         # Datei-Menü
         file_menu = menubar.addMenu('&Datei')
@@ -156,50 +153,6 @@ class SquishXMLHybridViewer(QMainWindow):
         about_action = QAction('&Über Squish XML Viewer', self)
         about_action.triggered.connect(self.show_about)
         help_menu.addAction(about_action)
-    
-    def create_toolbar(self):
-        """Toolbar mit wichtigen Aktionen erstellen"""
-        toolbar = self.addToolBar('Hauptaktionen')
-        toolbar.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
-        
-        # XML-Datei öffnen
-        open_file_action = QAction('📄 Datei öffnen', self)
-        open_file_action.setShortcut('Ctrl+O')
-        open_file_action.setToolTip('XML-Datei öffnen (Ctrl+O)')
-        open_file_action.triggered.connect(self.open_xml_file)
-        toolbar.addAction(open_file_action)
-        
-        # Ordner öffnen
-        open_folder_action = QAction('📁 Ordner öffnen', self)
-        open_folder_action.setShortcut('Ctrl+Shift+O') 
-        open_folder_action.setToolTip('Ordner öffnen (Ctrl+Shift+O)')
-        open_folder_action.triggered.connect(self.open_xml_folder)
-        toolbar.addAction(open_folder_action)
-        
-        toolbar.addSeparator()
-        
-        # Liste leeren
-        clear_action = QAction('🗑️ Liste leeren', self)
-        clear_action.setShortcut('Ctrl+L')
-        clear_action.setToolTip('Dateiliste leeren (Ctrl+L)')
-        clear_action.triggered.connect(self.clear_file_list)
-        toolbar.addAction(clear_action)
-        
-        toolbar.addSeparator()
-        
-        # WebView neu laden
-        reload_action = QAction('🔄 Neu laden', self)
-        reload_action.setShortcut('F5')
-        reload_action.setToolTip('WebView neu laden (F5)')
-        reload_action.triggered.connect(self.reload_webview)
-        toolbar.addAction(reload_action)
-        
-        # Browser öffnen
-        browser_action = QAction('🌐 Browser', self)
-        browser_action.setShortcut('Ctrl+B')
-        browser_action.setToolTip('In externem Browser öffnen (Ctrl+B)')
-        browser_action.triggered.connect(self.open_in_browser)
-        toolbar.addAction(browser_action)
     
     def create_file_list_panel(self, parent_splitter):
         """Dateiliste-Panel erstellen (links)"""
@@ -1523,34 +1476,10 @@ def main():
     """Hauptfunktion"""
     app = QApplication(sys.argv)
     
-    # App-Styling
+    # App-Styling (ohne Menü-Styling für native macOS-Menüs)
     app.setStyleSheet("""
         QMainWindow {
             background-color: #f6f8fa;
-        }
-        QMenuBar {
-            background-color: white;
-            border-bottom: 1px solid #e1e4e8;
-            padding: 4px;
-        }
-        QMenuBar::item {
-            padding: 8px 16px;
-            background-color: transparent;
-        }
-        QMenuBar::item:selected {
-            background-color: #f1f8ff;
-        }
-        QMenu {
-            background-color: white;
-            border: 1px solid #d1d5da;
-            padding: 4px;
-        }
-        QMenu::item {
-            padding: 8px 24px;
-        }
-        QMenu::item:selected {
-            background-color: #0366d6;
-            color: white;
         }
     """)
     
