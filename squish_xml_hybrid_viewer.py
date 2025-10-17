@@ -50,6 +50,10 @@ class SquishXMLHybridViewer(QMainWindow):
         self.current_xml_file = None
         self.temp_html_file = None
         
+        # Settings für persistente Speicherung
+        self.settings_file = os.path.expanduser("~/.squish_snapshot_viewer_settings.json")
+        self.load_settings()
+        
         self.init_ui()
         
         # Falls Datei/Ordner als Argument übergeben
@@ -59,6 +63,9 @@ class SquishXMLHybridViewer(QMainWindow):
                 self.load_xml_file(path)
             elif os.path.isdir(path):
                 self.load_xml_folder(path)
+        else:
+            # Letzte Dateien/Ordner automatisch laden falls gewünscht
+            self.restore_last_session()
     
     def init_ui(self):
         """UI erstellen - Hybrid-Layout"""
@@ -78,8 +85,8 @@ class SquishXMLHybridViewer(QMainWindow):
         self.create_menu()
         
         # Horizontal Splitter: Links Dateiliste, Rechts WebView
-        splitter = QSplitter(Qt.Horizontal)
-        splitter.setStyleSheet("""
+        self.splitter = QSplitter(Qt.Horizontal)
+        self.splitter.setStyleSheet("""
             QSplitter::handle {
                 background: rgba(255, 255, 255, 0.3);
                 width: 2px;
@@ -88,16 +95,17 @@ class SquishXMLHybridViewer(QMainWindow):
                 background: transparent;
             }
         """)
-        main_layout.addWidget(splitter)
+        main_layout.addWidget(self.splitter)
         
-        # Links: Dateiliste
-        self.create_file_list_panel(splitter)
+        # Links: Dateiliste (initial versteckt)
+        self.create_file_list_panel(self.splitter)
         
         # Rechts: WebView 
-        self.create_webview_panel(splitter)
+        self.create_webview_panel(self.splitter)
         
-        # Splitter-Verhältnisse: 300px links, Rest rechts
-        splitter.setSizes([300, 1100])
+        # Initial: Nur WebView sichtbar, Dateiliste versteckt
+        self.file_list_panel.hide()
+        self.splitter.setSizes([0, 1400])  # Ganze Breite für WebView
         
         # Statusleiste
         self.statusBar().showMessage("Ready - Open file or folder")
@@ -110,7 +118,7 @@ class SquishXMLHybridViewer(QMainWindow):
         menubar.setNativeMenuBar(True)
         
         # Datei-Menü
-        file_menu = menubar.addMenu('&Datei')
+        file_menu = menubar.addMenu('&File')
         
         # XML-Datei öffnen
         open_file_action = QAction('&Open XML File...', self)
@@ -160,26 +168,34 @@ class SquishXMLHybridViewer(QMainWindow):
         
         # Über
         about_action = QAction('&About Squish Snapshot Viewer', self)
+        about_action.setMenuRole(QAction.AboutRole)  # macOS-spezifische Rolle
         about_action.triggered.connect(self.show_about)
         help_menu.addAction(about_action)
+        
+        # Zusätzlicher Help-Eintrag für Sichtbarkeit
+        help_action = QAction('&Help Documentation', self)
+        help_action.setShortcut('F1')
+        help_action.triggered.connect(self.show_about)
+        help_menu.addAction(help_action)
     
     def create_file_list_panel(self, parent_splitter):
         """Dateiliste-Panel erstellen (links)"""
-        panel = QFrame()
-        panel.setFrameStyle(QFrame.StyledPanel)
+        self.file_list_panel = QFrame()
+        panel = self.file_list_panel
+        panel.setFrameStyle(QFrame.NoFrame)  # Kein Standard-Frame-Style
+        panel.setAutoFillBackground(True)
         panel.setStyleSheet("""
             QFrame {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1, 
+                    stop:0 #2c3e50, stop:1 #34495e) !important;
                 border-right: 1px solid rgba(255, 255, 255, 0.3);
+                border-radius: 0px;
             }
         """)
         parent_splitter.addWidget(panel)
         
         layout = QVBoxLayout(panel)
         layout.setContentsMargins(10, 10, 10, 10)
-        
-        # Sicherstellen dass das Panel den Gradient-Hintergrund hat
-        panel.setAutoFillBackground(True)
         
         # Header
         header = QLabel("XML Files")
@@ -190,8 +206,8 @@ class SquishXMLHybridViewer(QMainWindow):
             padding: 8px 0;
             border-bottom: 1px solid rgba(255, 255, 255, 0.3);
             margin-bottom: 10px;
-            background: #2c3e50;
-            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
         """)
         layout.addWidget(header)
         
@@ -199,27 +215,27 @@ class SquishXMLHybridViewer(QMainWindow):
         self.file_list = QListWidget()
         self.file_list.setStyleSheet("""
             QListWidget {
-                border: 1px solid #ddd;
-                background: #2c3e50;
+                border: 1px solid rgba(255, 255, 255, 0.3);
+                background: rgba(255, 255, 255, 0.1);
                 font-size: 14px;
-                padding: 5px;
+                padding: 10px;
                 color: white;
-                border-radius: 8px;
+                border-radius: 12px;
             }
             QListWidget::item {
-                padding: 8px 12px;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                padding: 12px 16px;
+                border: none;
                 color: white;
-                border-radius: 4px;
-                margin: 2px;
-                background: rgba(255, 255, 255, 0.1);
+                border-radius: 8px;
+                margin: 4px 0;
+                background: rgba(255, 255, 255, 0.2);
             }
             QListWidget::item:selected {
-                background-color: #3498db;
+                background: rgba(255, 255, 255, 0.4);
                 color: white;
             }
             QListWidget::item:hover:!selected {
-                background-color: rgba(255, 255, 255, 0.2);
+                background: rgba(255, 255, 255, 0.3);
                 color: white;
             }
         """)
@@ -234,9 +250,9 @@ class SquishXMLHybridViewer(QMainWindow):
                 font-size: 12px;
                 padding: 20px;
                 text-align: center;
-                background: #2c3e50;
-                border: 1px solid #34495e;
-                border-radius: 4px;
+                background: rgba(255, 255, 255, 0.15);
+                border: 1px solid rgba(255, 255, 255, 0.3);
+                border-radius: 12px;
                 margin: 10px 0;
             }
         """)
@@ -246,10 +262,13 @@ class SquishXMLHybridViewer(QMainWindow):
     def create_webview_panel(self, parent_splitter):
         """WebView-Panel erstellen (rechts)"""
         panel = QFrame()
-        panel.setFrameStyle(QFrame.StyledPanel)
+        panel.setFrameStyle(QFrame.NoFrame)  # Kein Standard-Frame-Style
+        panel.setAutoFillBackground(True)
         panel.setStyleSheet("""
             QFrame {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1, 
+                    stop:0 #2c3e50, stop:1 #34495e) !important;
+                border: none;
             }
         """)
         parent_splitter.addWidget(panel)
@@ -257,9 +276,6 @@ class SquishXMLHybridViewer(QMainWindow):
         layout = QVBoxLayout(panel)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
-        
-        # Sicherstellen dass das Panel den Gradient-Hintergrund hat
-        panel.setAutoFillBackground(True)
         
         # WebView
         self.webview = QWebEngineView()
@@ -280,11 +296,11 @@ class SquishXMLHybridViewer(QMainWindow):
         <html>
         <head>
             <meta charset="UTF-8">
-            <title>Squish XML Hybrid Viewer</title>
+            <title>Squish Snapshot Viewer</title>
             <style>
                 body {
                     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
                     margin: 0;
                     padding: 0;
                     display: flex;
@@ -324,7 +340,7 @@ class SquishXMLHybridViewer(QMainWindow):
         <body>
             <div class="welcome-container">
                 <div class="icon">🔍</div>
-                <h1>Squish XML Hybrid Viewer</h1>
+                <h1>Squish Snapshot Viewer</h1>
                 <div class="subtitle">Moderne Hybride Anwendung</div>
                 
                 <div class="feature">📄 XML-Datei öffnen (Ctrl+O)</div>
@@ -348,26 +364,36 @@ class SquishXMLHybridViewer(QMainWindow):
         """XML-Datei öffnen Dialog"""
         file_path, _ = QFileDialog.getOpenFileName(
             self, 
-            "XML-Datei öffnen", 
-            "", 
+            "Open XML File", 
+            self.last_directory, 
             "XML Files (*.xml);;All Files (*)"
         )
         if file_path:
-            self.load_xml_file(file_path)
+            # Verzeichnis nur aktualisieren wenn Datei tatsächlich existiert
+            if os.path.exists(file_path):
+                self.last_directory = os.path.dirname(file_path)
+                self.load_xml_file(file_path)
+                if not self.is_restoring_session:
+                    self.save_settings()
     
     def open_xml_folder(self):
         """XML-Ordner öffnen Dialog"""
         folder_path = QFileDialog.getExistingDirectory(
             self,
-            "Ordner mit XML-Dateien öffnen"
+            "Open Folder with XML Files",
+            self.last_directory
         )
-        if folder_path:
+        if folder_path and os.path.exists(folder_path):
+            self.last_directory = folder_path
             self.load_xml_folder(folder_path)
+            if not self.is_restoring_session:
+                self.save_settings()
     
     def load_xml_file(self, file_path):
         """Einzelne XML-Datei zur Liste hinzufügen"""
         if not os.path.exists(file_path):
-            QMessageBox.warning(self, "Fehler", f"Datei nicht gefunden: {file_path}")
+            if not self.is_restoring_session:  # Nur Warnung zeigen wenn nicht beim Wiederherstellen
+                QMessageBox.warning(self, "Fehler", f"Datei nicht gefunden: {file_path}")
             return
         
         # Prüfen ob schon in der Liste
@@ -376,13 +402,21 @@ class SquishXMLHybridViewer(QMainWindow):
                 self.select_file_in_list(file_path)
                 return
         
-        # Zur Liste hinzufügen
-        xml_file = {
-            'path': file_path,
-            'name': os.path.basename(file_path),
-            'size': os.path.getsize(file_path)
-        }
-        self.xml_files.append(xml_file)
+        try:
+            # Zur Liste hinzufügen
+            xml_file = {
+                'path': file_path,
+                'name': os.path.basename(file_path),
+                'size': os.path.getsize(file_path)
+            }
+            self.xml_files.append(xml_file)
+        except (OSError, IOError) as e:
+            if not self.is_restoring_session:
+                QMessageBox.warning(self, "Fehler", f"Datei kann nicht gelesen werden: {file_path}\n{str(e)}")
+            return
+        
+        # Dateiliste einblenden wenn erste Datei geladen wird
+        self.show_file_list_if_needed()
         
         # Liste aktualisieren
         self.update_file_list()
@@ -390,25 +424,34 @@ class SquishXMLHybridViewer(QMainWindow):
         # Datei automatisch auswählen
         self.select_file_in_list(file_path)
         
-        self.statusBar().showMessage(f"XML-Datei hinzugefügt: {os.path.abspath(file_path)}")
+
+        
+        self.statusBar().showMessage(f"XML file added: {os.path.abspath(file_path)}")
     
     def load_xml_folder(self, folder_path):
         """Alle XML-Dateien aus Ordner laden"""
         if not os.path.exists(folder_path):
-            QMessageBox.warning(self, "Fehler", f"Ordner nicht gefunden: {folder_path}")
+            if not self.is_restoring_session:  # Nur Warnung zeigen wenn nicht beim Wiederherstellen
+                QMessageBox.warning(self, "Fehler", f"Ordner nicht gefunden: {folder_path}")
             return
         
         xml_files_found = []
         
-        # Alle XML-Dateien im Ordner finden
-        for file_name in os.listdir(folder_path):
-            if file_name.lower().endswith('.xml'):
-                file_path = os.path.join(folder_path, file_name)
-                if os.path.isfile(file_path):
-                    xml_files_found.append(file_path)
+        try:
+            # Alle XML-Dateien im Ordner finden
+            for file_name in os.listdir(folder_path):
+                if file_name.lower().endswith('.xml'):
+                    file_path = os.path.join(folder_path, file_name)
+                    if os.path.isfile(file_path):
+                        xml_files_found.append(file_path)
+        except (OSError, PermissionError) as e:
+            if not self.is_restoring_session:
+                QMessageBox.warning(self, "Fehler", f"Ordner kann nicht gelesen werden: {folder_path}\n{str(e)}")
+            return
         
         if not xml_files_found:
-            QMessageBox.information(self, "Info", f"Keine XML-Dateien im Ordner gefunden:\n{folder_path}")
+            if not self.is_restoring_session:  # Nur Info zeigen wenn nicht beim Wiederherstellen
+                QMessageBox.information(self, "Info", f"Keine XML-Dateien im Ordner gefunden:\n{folder_path}")
             return
         
         # Dateien zur Liste hinzufügen
@@ -417,13 +460,21 @@ class SquishXMLHybridViewer(QMainWindow):
             # Prüfen ob schon in der Liste
             already_exists = any(xml_file['path'] == file_path for xml_file in self.xml_files)
             if not already_exists:
-                xml_file = {
-                    'path': file_path,
-                    'name': os.path.basename(file_path),
-                    'size': os.path.getsize(file_path)
-                }
-                self.xml_files.append(xml_file)
-                added_count += 1
+                try:
+                    xml_file = {
+                        'path': file_path,
+                        'name': os.path.basename(file_path),
+                        'size': os.path.getsize(file_path)
+                    }
+                    self.xml_files.append(xml_file)
+                    added_count += 1
+                except (OSError, IOError):
+                    # Datei kann nicht gelesen werden, überspringen
+                    continue
+        
+        # Dateiliste einblenden wenn Dateien geladen wurden
+        if added_count > 0:
+            self.show_file_list_if_needed()
         
         # Liste aktualisieren
         self.update_file_list()
@@ -432,8 +483,103 @@ class SquishXMLHybridViewer(QMainWindow):
         if added_count > 0 and xml_files_found:
             self.select_file_in_list(xml_files_found[0])
         
-        self.statusBar().showMessage(f"Ordner geladen: {added_count} neue XML-Dateien hinzugefügt")
+        self.statusBar().showMessage(f"Folder loaded: {added_count} new XML files added")
     
+    def load_settings(self):
+        """Einstellungen aus Datei laden"""
+        self.last_directory = os.path.expanduser("~")  # Default: Home-Verzeichnis
+        self.last_files = []
+        self.is_restoring_session = False  # Flag für Session-Wiederherstellung
+        
+        try:
+            if os.path.exists(self.settings_file):
+                with open(self.settings_file, 'r', encoding='utf-8') as f:
+                    settings = json.load(f)
+                    self.last_directory = settings.get('last_directory', self.last_directory)
+                    
+                    # Nur existierende Dateien behalten und Verzeichnis validieren
+                    loaded_files = settings.get('last_files', [])
+                    self.last_files = []
+                    for file_path in loaded_files:
+                        if os.path.exists(file_path):
+                            self.last_files.append(file_path)
+                        else:
+                            print(f"File not found, skipping: {file_path}")
+                    
+                    # Letztes Verzeichnis validieren, falls nicht vorhanden -> Home
+                    if not os.path.exists(self.last_directory):
+                        self.last_directory = os.path.expanduser("~")
+                        
+        except Exception as e:
+            print(f"Error loading settings: {e}")
+            # Bei Fehler sichere Defaults verwenden
+            self.last_directory = os.path.expanduser("~")
+            self.last_files = []
+    
+    def save_settings(self):
+        """Einstellungen in Datei speichern - nur wenn nicht gerade Session wiederhergestellt wird"""
+        if self.is_restoring_session:
+            return  # Während Session-Restore nicht speichern
+            
+        try:
+            # Nur gültige, existierende Dateien speichern
+            valid_files = []
+            for xml_file in self.xml_files:
+                if os.path.exists(xml_file['path']):
+                    valid_files.append(xml_file['path'])
+            
+            settings = {
+                'last_directory': self.last_directory if os.path.exists(self.last_directory) else os.path.expanduser("~"),
+                'last_files': valid_files[:10]  # Nur die ersten 10 gültigen Dateien
+            }
+            
+            with open(self.settings_file, 'w', encoding='utf-8') as f:
+                json.dump(settings, f, indent=2, ensure_ascii=False)
+                
+        except Exception as e:
+            print(f"Error saving settings: {e}")
+    
+    def restore_last_session(self):
+        """Letzte Session wiederherstellen"""
+        if not self.last_files:
+            return
+            
+        self.is_restoring_session = True  # Flag setzen um Speichern zu verhindern
+        
+        try:
+            restored_count = 0
+            for file_path in self.last_files:
+                if os.path.exists(file_path):
+                    self.load_xml_file(file_path)
+                    restored_count += 1
+                else:
+                    print(f"Skipping missing file: {file_path}")
+            
+            if restored_count > 0:
+                self.statusBar().showMessage(f"Restored {restored_count} files from last session")
+        except Exception as e:
+            print(f"Error restoring session: {e}")
+        finally:
+            self.is_restoring_session = False  # Flag zurücksetzen
+    
+
+
+    def show_file_list_if_needed(self):
+        """Dateiliste einblenden wenn Dateien vorhanden sind"""
+        if len(self.xml_files) > 0 and self.file_list_panel.isHidden():
+            self.file_list_panel.show()
+            # Splitter-Verhältnisse anpassen: 300px links, Rest rechts
+            self.splitter.setSizes([300, 1100])
+    
+    def hide_file_list_if_empty(self):
+        """Dateiliste ausblenden wenn leer"""
+        if len(self.xml_files) == 0 and self.file_list_panel.isVisible():
+            self.file_list_panel.hide()
+            # Ganze Breite für WebView
+            self.splitter.setSizes([0, 1400])
+            # Zurück zur Landingpage
+            self.load_welcome_page()
+
     def update_file_list(self):
         """Dateiliste UI aktualisieren"""
         self.file_list.clear()
@@ -471,6 +617,14 @@ class SquishXMLHybridViewer(QMainWindow):
     def on_file_selected(self, item):
         """Datei aus Liste ausgewählt"""
         file_path = item.data(Qt.UserRole)
+        
+        # Prüfen ob Datei noch existiert
+        if not os.path.exists(file_path):
+            QMessageBox.warning(self, "Fehler", f"Datei nicht mehr vorhanden: {file_path}")
+            # Datei aus Liste entfernen
+            self.remove_file_from_list(file_path)
+            return
+        
         self.current_xml_file = file_path
         
         # HTML generieren und anzeigen
@@ -478,8 +632,23 @@ class SquishXMLHybridViewer(QMainWindow):
         
         self.statusBar().showMessage(f"Angezeigt: {os.path.abspath(file_path)}")
     
+    def remove_file_from_list(self, file_path):
+        """Datei aus der Liste entfernen"""
+        self.xml_files = [xml_file for xml_file in self.xml_files if xml_file['path'] != file_path]
+        self.update_file_list()
+        
+        # Falls keine Dateien mehr da sind, Liste ausblenden
+        if not self.xml_files:
+            self.hide_file_list()
+    
     def generate_and_show_html(self, xml_file_path):
         """HTML-Datei generieren und in WebView anzeigen"""
+        # Nochmals prüfen ob Datei existiert
+        if not os.path.exists(xml_file_path):
+            self.remove_file_from_list(xml_file_path)
+            QMessageBox.warning(self, "Fehler", f"Datei wurde gelöscht: {xml_file_path}")
+            return
+            
         try:
             # HTML generieren
             html_content = self.generate_html_from_xml(xml_file_path)
@@ -515,6 +684,10 @@ class SquishXMLHybridViewer(QMainWindow):
     
     def generate_html_from_xml(self, xml_file_path):
         """HTML aus XML generieren - verwendet die bewährte Funktionalität aus squish_xml_html_gen.py"""
+        
+        # Nochmals Dateiexistenz prüfen
+        if not os.path.exists(xml_file_path):
+            raise FileNotFoundError(f"XML-Datei nicht gefunden: {xml_file_path}")
         
         # Die bewährten Funktionen aus squish_xml_html_gen.py importieren
         return self.generate_html_using_template(xml_file_path)
@@ -685,7 +858,7 @@ class SquishXMLHybridViewer(QMainWindow):
 <html>
 <head>
 <meta charset="utf-8">
-<title>XML Viewer - {TITLE}</title>
+<title>Squish Snapshot Viewer - {TITLE}</title>
 <style>
 body{{font-family: Arial, Helvetica, sans-serif; margin:0; padding:0;}}
 .header{{padding:10px; background:#2c3e50; color:white; display:flex; align-items:center; gap:15px;}}
@@ -802,8 +975,8 @@ body{{font-family: Arial, Helvetica, sans-serif; margin:0; padding:0;}}
 </div>
 
 <div id="propsContextMenu" class="context-menu">
-  <div class="context-menu-item" onclick="copyToClipboard('propName')">Copy property name</div>
   <div class="context-menu-item" onclick="copyToClipboard('propValue')">Copy property value</div>
+  <div class="context-menu-item" onclick="copyToClipboard('propName')">Copy property name</div>
 </div>
 
 <script>
@@ -1432,8 +1605,8 @@ document.addEventListener('contextmenu', function(e) {
         self.xml_files = []
         self.current_xml_file = None
         self.update_file_list()
-        self.load_welcome_page()
-        self.statusBar().showMessage("Dateiliste geleert")
+        self.hide_file_list_if_empty()
+        self.statusBar().showMessage("File list cleared")
     
     def reload_webview(self):
         """WebView neu laden"""
@@ -1453,38 +1626,117 @@ document.addEventListener('contextmenu', function(e) {
             QMessageBox.information(self, "Info", "Keine HTML-Datei zum Öffnen verfügbar")
     
     def show_about(self):
-        """Über-Dialog anzeigen"""
-        about_text = """
-        <h3>Squish XML Hybrid Viewer</h3>
+        """About-Dialog als Popup anzeigen"""
+        from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton
+        from PyQt5.QtCore import Qt
+        from PyQt5.QtGui import QFont
         
-        <p>Eine hybride Desktop-Anwendung zur Anzeige von Squish XML-Dateien.</p>
+        # Popup-Dialog erstellen
+        dialog = QDialog(self)
+        dialog.setWindowTitle("About Squish Snapshot Viewer")
+        dialog.setFixedSize(500, 700)
+        dialog.setStyleSheet("""
+            QDialog {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1, 
+                    stop:0 #2c3e50, stop:1 #34495e);
+                color: white;
+                border-radius: 15px;
+            }
+            QLabel {
+                color: white;
+                background: transparent;
+            }
+            QPushButton {
+                background: rgba(255, 255, 255, 0.2);
+                border: 1px solid rgba(255, 255, 255, 0.3);
+                color: white;
+                padding: 10px 20px;
+                border-radius: 8px;
+                font-size: 14px;
+            }
+            QPushButton:hover {
+                background: rgba(255, 255, 255, 0.3);
+            }
+            QPushButton:pressed {
+                background: rgba(255, 255, 255, 0.1);
+            }
+        """)
         
-        <p><b>Features:</b></p>
-        <ul>
-        <li>Dreipanel-Layout mit Tree, Screenshot und Properties</li>
-        <li>Such- und Filterfunktionen</li>
-        <li>Screenshot-Overlays für UI-Elemente</li>
-        <li>Kontextmenüs mit Clipboard-Integration</li>
-        <li>HTML-Export und Browser-Ansicht</li>
-        </ul>
+        layout = QVBoxLayout(dialog)
+        layout.setSpacing(15)
+        layout.setContentsMargins(40, 30, 40, 30)
         
-        <p><b>Tastenkürzel:</b></p>
-        <ul>
-        <li><b>Strg+O:</b> XML-Datei öffnen</li>
-        <li><b>Strg+Shift+O:</b> Ordner öffnen</li>
-        <li><b>Strg+L:</b> Liste leeren</li>
-        <li><b>F5:</b> WebView neu laden</li>
-        <li><b>Strg+B:</b> In Browser öffnen</li>
-        <li><b>Strg+Q:</b> Beenden</li>
-        </ul>
+        # Icon und Titel
+        title = QLabel("🔍 Squish Snapshot Viewer")
+        title.setAlignment(Qt.AlignCenter)
+        title.setFont(QFont("Arial", 24, QFont.Bold))
+        layout.addWidget(title)
         
-        <p><small>Powered by PyQt5 + QWebEngineView</small></p>
-        """
+        # Version
+        version = QLabel("Hybrid Desktop Application v1.0")
+        version.setAlignment(Qt.AlignCenter)
+        version.setStyleSheet("font-size: 14px; opacity: 0.8; margin-bottom: 20px;")
+        layout.addWidget(version)
         
-        QMessageBox.about(self, "Über Squish XML Viewer", about_text)
+        # Features
+        features_title = QLabel("✨ Features")
+        features_title.setFont(QFont("Arial", 16, QFont.Bold))
+        features_title.setStyleSheet("margin-top: 20px; margin-bottom: 10px;")
+        layout.addWidget(features_title)
+        
+        features_text = QLabel(
+            "• Three-panel layout with Tree, Screenshot and Properties\n"
+            "• Search and filter functionality\n"
+            "• Screenshot overlays for UI elements\n"
+            "• Context menus with clipboard integration\n"
+            "• HTML export and browser view\n"
+            "• Native macOS menu integration"
+        )
+        features_text.setStyleSheet("font-size: 12px; line-height: 1.4; background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px;")
+        layout.addWidget(features_text)
+        
+        # Shortcuts
+        shortcuts_title = QLabel("✨ Keyboard Shortcuts")
+        shortcuts_title.setFont(QFont("Arial", 16, QFont.Bold))
+        shortcuts_title.setStyleSheet("margin-top: 20px; margin-bottom: 10px;")
+        layout.addWidget(shortcuts_title)
+        
+        shortcuts_text = QLabel(
+            "Ctrl+O     Open XML File\n"
+            "Ctrl+⇧+O   Open Folder\n"
+            "Ctrl+L     Clear List\n"
+            "F5         Reload WebView\n"
+            "Ctrl+B     Open in Browser\n"
+            "Ctrl+Q     Quit"
+        )
+        shortcuts_text.setStyleSheet("font-size: 12px; font-family: monospace; background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px;")
+        layout.addWidget(shortcuts_text)
+        
+        # Footer
+        str1 = "Powered by PyQt5 + QWebEngineView"
+        str2 = "(c) 2025 - Built with ♥ for QT UI Testing"
+        footer1 = QLabel(str1)
+        footer2 = QLabel(str2)
+        footer1.setAlignment(Qt.AlignCenter)
+        footer1.setStyleSheet("font-size: 11px; opacity: 0.7; margin-top: 20px; margin-bottom: 5px;")
+        layout.addWidget(footer1)
+        footer2.setAlignment(Qt.AlignCenter)
+        footer2.setStyleSheet("font-size: 11px; opacity: 0.7; margin-top: 5px; margin-bottom: 10px;")
+        layout.addWidget(footer2)
+        
+        # Close Button
+        close_button = QPushButton("Close")
+        close_button.clicked.connect(dialog.accept)
+        layout.addWidget(close_button)
+        
+        # Dialog anzeigen
+        dialog.exec_()
 
     def closeEvent(self, event):
         """Anwendung schließen - Aufräumen"""
+        # Einstellungen speichern
+        self.save_settings()
+        
         if self.temp_html_file:
             try:
                 os.unlink(self.temp_html_file)
@@ -1500,7 +1752,8 @@ def main():
     # App-Styling (ohne Menü-Styling für native macOS-Menüs)
     app.setStyleSheet("""
         QMainWindow {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: qlineargradient(x1:0, y1:0, x2:1, y2:1, 
+                stop:0 #2c3e50, stop:1 #34495e);
         }
     """)
     

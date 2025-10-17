@@ -415,7 +415,7 @@ class SquishXMLDesktopViewer:
             self.xml_data = tree.getroot()
             
             # UI aktualisieren
-            self.file_label.config(text=f"XML Viewer - {os.path.basename(file_path)}")
+            self.file_label.config(text=f"Squish Snapshot Viewer - {os.path.basename(file_path)}")
             
             # Baum aufbauen
             self.populate_tree()
