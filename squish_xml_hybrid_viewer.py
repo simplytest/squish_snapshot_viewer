@@ -62,7 +62,7 @@ class SquishXMLHybridViewer(QMainWindow):
     
     def init_ui(self):
         """UI erstellen - Hybrid-Layout"""
-        self.setWindowTitle("Squish XML Hybrid Viewer")
+        self.setWindowTitle("Squish Snapshot Viewer")
         self.setGeometry(100, 100, 1400, 900)
         
         # Zentrales Widget
@@ -79,6 +79,15 @@ class SquishXMLHybridViewer(QMainWindow):
         
         # Horizontal Splitter: Links Dateiliste, Rechts WebView
         splitter = QSplitter(Qt.Horizontal)
+        splitter.setStyleSheet("""
+            QSplitter::handle {
+                background: rgba(255, 255, 255, 0.3);
+                width: 2px;
+            }
+            QSplitter {
+                background: transparent;
+            }
+        """)
         main_layout.addWidget(splitter)
         
         # Links: Dateiliste
@@ -91,7 +100,7 @@ class SquishXMLHybridViewer(QMainWindow):
         splitter.setSizes([300, 1100])
         
         # Statusleiste
-        self.statusBar().showMessage("Bereit - Datei oder Ordner öffnen")
+        self.statusBar().showMessage("Ready - Open file or folder")
     
     def create_menu(self):
         """Menüleiste erstellen"""
@@ -104,13 +113,13 @@ class SquishXMLHybridViewer(QMainWindow):
         file_menu = menubar.addMenu('&Datei')
         
         # XML-Datei öffnen
-        open_file_action = QAction('&XML-Datei öffnen...', self)
+        open_file_action = QAction('&Open XML File...', self)
         open_file_action.setShortcut('Ctrl+O')
         open_file_action.triggered.connect(self.open_xml_file)
         file_menu.addAction(open_file_action)
         
         # Ordner öffnen
-        open_folder_action = QAction('&Ordner öffnen...', self)
+        open_folder_action = QAction('Open &Folder...', self)
         open_folder_action.setShortcut('Ctrl+Shift+O')
         open_folder_action.triggered.connect(self.open_xml_folder)
         file_menu.addAction(open_folder_action)
@@ -118,7 +127,7 @@ class SquishXMLHybridViewer(QMainWindow):
         file_menu.addSeparator()
         
         # Liste leeren
-        clear_action = QAction('Liste &leeren', self)
+        clear_action = QAction('&Clear List', self)
         clear_action.setShortcut('Ctrl+L')
         clear_action.triggered.connect(self.clear_file_list)
         file_menu.addAction(clear_action)
@@ -126,31 +135,31 @@ class SquishXMLHybridViewer(QMainWindow):
         file_menu.addSeparator()
         
         # Beenden
-        exit_action = QAction('&Beenden', self)
+        exit_action = QAction('&Quit', self)
         exit_action.setShortcut('Ctrl+Q')
         exit_action.triggered.connect(self.close)
         file_menu.addAction(exit_action)
         
         # Ansicht-Menü
-        view_menu = menubar.addMenu('&Ansicht')
+        view_menu = menubar.addMenu('&View')
         
         # WebView neu laden
-        reload_action = QAction('WebView &neu laden', self)
+        reload_action = QAction('&Reload WebView', self)
         reload_action.setShortcut('F5')
         reload_action.triggered.connect(self.reload_webview)
         view_menu.addAction(reload_action)
         
         # HTML-Datei im Browser öffnen
-        open_browser_action = QAction('In &Browser öffnen', self)
+        open_browser_action = QAction('Open in &Browser', self)
         open_browser_action.setShortcut('Ctrl+B')
         open_browser_action.triggered.connect(self.open_in_browser)
         view_menu.addAction(open_browser_action)
         
         # Hilfe-Menü
-        help_menu = menubar.addMenu('&Hilfe')
+        help_menu = menubar.addMenu('&Help')
         
         # Über
-        about_action = QAction('&Über Squish XML Viewer', self)
+        about_action = QAction('&About Squish Snapshot Viewer', self)
         about_action.triggered.connect(self.show_about)
         help_menu.addAction(about_action)
     
@@ -160,8 +169,8 @@ class SquishXMLHybridViewer(QMainWindow):
         panel.setFrameStyle(QFrame.StyledPanel)
         panel.setStyleSheet("""
             QFrame {
-                background-color: #f6f8fa;
-                border-right: 1px solid #e1e4e8;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                border-right: 1px solid rgba(255, 255, 255, 0.3);
             }
         """)
         parent_splitter.addWidget(panel)
@@ -169,15 +178,20 @@ class SquishXMLHybridViewer(QMainWindow):
         layout = QVBoxLayout(panel)
         layout.setContentsMargins(10, 10, 10, 10)
         
+        # Sicherstellen dass das Panel den Gradient-Hintergrund hat
+        panel.setAutoFillBackground(True)
+        
         # Header
-        header = QLabel("XML-Dateien")
+        header = QLabel("XML Files")
         header.setStyleSheet("""
             font-size: 16px;
             font-weight: 600;
-            color: #24292e;
+            color: white;
             padding: 8px 0;
-            border-bottom: 1px solid #e1e4e8;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
             margin-bottom: 10px;
+            background: #2c3e50;
+            border-radius: 4px;
         """)
         layout.addWidget(header)
         
@@ -185,36 +199,43 @@ class SquishXMLHybridViewer(QMainWindow):
         self.file_list = QListWidget()
         self.file_list.setStyleSheet("""
             QListWidget {
-                border: 1px solid #e1e4e8;
-                background-color: white;
+                border: 1px solid #ddd;
+                background: #2c3e50;
                 font-size: 14px;
                 padding: 5px;
+                color: white;
+                border-radius: 8px;
             }
             QListWidget::item {
                 padding: 8px 12px;
-                border-bottom: 1px solid #f6f8fa;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                color: white;
+                border-radius: 4px;
+                margin: 2px;
+                background: rgba(255, 255, 255, 0.1);
             }
             QListWidget::item:selected {
-                background-color: #0366d6;
+                background-color: #3498db;
                 color: white;
             }
             QListWidget::item:hover:!selected {
-                background-color: #f1f8ff;
+                background-color: rgba(255, 255, 255, 0.2);
+                color: white;
             }
         """)
         self.file_list.itemClicked.connect(self.on_file_selected)
         layout.addWidget(self.file_list)
         
         # Info-Text für leere Liste
-        self.info_label = QLabel("Keine XML-Dateien geladen.\n\nVerwenden Sie das Datei-Menü zum Öffnen von:\n• XML-Dateien (Strg+O)\n• Ordnern (Strg+Shift+O)")
+        self.info_label = QLabel("No XML files loaded.\n\nUse the File menu to open:\n• XML Files (Ctrl+O)\n• Folders (Ctrl+Shift+O)")
         self.info_label.setStyleSheet("""
             QLabel {
-                color: #586069;
+                color: white;
                 font-size: 12px;
                 padding: 20px;
                 text-align: center;
-                background-color: #f8f9fa;
-                border: 1px dashed #dee2e6;
+                background: #2c3e50;
+                border: 1px solid #34495e;
                 border-radius: 4px;
                 margin: 10px 0;
             }
@@ -228,7 +249,7 @@ class SquishXMLHybridViewer(QMainWindow):
         panel.setFrameStyle(QFrame.StyledPanel)
         panel.setStyleSheet("""
             QFrame {
-                background-color: white;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             }
         """)
         parent_splitter.addWidget(panel)
@@ -237,9 +258,15 @@ class SquishXMLHybridViewer(QMainWindow):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
         
+        # Sicherstellen dass das Panel den Gradient-Hintergrund hat
+        panel.setAutoFillBackground(True)
+        
         # WebView
         self.webview = QWebEngineView()
-        self.webview.setStyleSheet("border: none;")
+        self.webview.setStyleSheet("""
+            border: none;
+            background: transparent;
+        """)
         
         # Standard-Seite laden (Willkommensseite)
         self.load_welcome_page()
@@ -363,7 +390,7 @@ class SquishXMLHybridViewer(QMainWindow):
         # Datei automatisch auswählen
         self.select_file_in_list(file_path)
         
-        self.statusBar().showMessage(f"XML-Datei hinzugefügt: {xml_file['name']}")
+        self.statusBar().showMessage(f"XML-Datei hinzugefügt: {os.path.abspath(file_path)}")
     
     def load_xml_folder(self, folder_path):
         """Alle XML-Dateien aus Ordner laden"""
@@ -414,14 +441,8 @@ class SquishXMLHybridViewer(QMainWindow):
         for xml_file in self.xml_files:
             item = QListWidgetItem()
             
-            # Text mit Dateiname und Größe
-            size_kb = xml_file['size'] / 1024
-            if size_kb > 1024:
-                size_str = f"{size_kb/1024:.1f} MB"
-            else:
-                size_str = f"{size_kb:.1f} KB"
-            
-            item.setText(f"📄 {xml_file['name']}\n    {size_str}")
+            # Text nur mit Dateiname (ohne Größe)
+            item.setText(f"📄 {xml_file['name']}")
             item.setData(Qt.UserRole, xml_file['path'])
             
             self.file_list.addItem(item)
@@ -429,13 +450,13 @@ class SquishXMLHybridViewer(QMainWindow):
         # Info-Label aktualisieren
         count = len(self.xml_files)
         if count == 0:
-            self.info_label.setText("Keine XML-Dateien geladen.\n\nVerwenden Sie das Datei-Menü zum Öffnen von:\n• XML-Dateien (Strg+O)\n• Ordnern (Strg+Shift+O)")
+            self.info_label.setText("No XML files loaded.\n\nUse the File menu to open:\n• XML Files (Ctrl+O)\n• Folders (Ctrl+Shift+O)")
             self.info_label.show()
         elif count == 1:
-            self.info_label.setText("1 XML-Datei geladen")
+            self.info_label.setText("1 XML file loaded")
             self.info_label.hide()
         else:
-            self.info_label.setText(f"{count} XML-Dateien geladen")
+            self.info_label.setText(f"{count} XML files loaded")
             self.info_label.hide()
     
     def select_file_in_list(self, file_path):
@@ -455,7 +476,7 @@ class SquishXMLHybridViewer(QMainWindow):
         # HTML generieren und anzeigen
         self.generate_and_show_html(file_path)
         
-        self.statusBar().showMessage(f"Angezeigt: {os.path.basename(file_path)}")
+        self.statusBar().showMessage(f"Angezeigt: {os.path.abspath(file_path)}")
     
     def generate_and_show_html(self, xml_file_path):
         """HTML-Datei generieren und in WebView anzeigen"""
@@ -1479,7 +1500,7 @@ def main():
     # App-Styling (ohne Menü-Styling für native macOS-Menüs)
     app.setStyleSheet("""
         QMainWindow {
-            background-color: #f6f8fa;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
     """)
     
