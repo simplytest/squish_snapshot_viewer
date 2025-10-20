@@ -440,9 +440,10 @@ document.addEventListener("click", function(e){
 });
 
 // Initialize when DOM is loaded
+
 document.addEventListener("DOMContentLoaded", function() {
     originalTreeHTML = document.getElementById('treeContainer').innerHTML;
-    
+
     // Tree context menu
     document.addEventListener('contextmenu', function(e) {
         if (e.target.classList.contains('node')) {
@@ -481,9 +482,4 @@ document.addEventListener('contextmenu', function(e) {
     if (!e.target.closest('.context-menu')) {
         hideContextMenus();
     }
-});
-
-// Update overlay when window is resized
-window.addEventListener('resize', function() {
-    setTimeout(updateElementOverlay, 100);
 });
