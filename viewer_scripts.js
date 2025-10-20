@@ -1,3 +1,70 @@
+function filterTreeByPropertyValue() {
+    var searchTerm = document.getElementById('propertyValueSearch').value.toLowerCase();
+    var treeContainer = document.getElementById('treeContainer');
+    var allNodes = treeContainer.querySelectorAll('li');
+    if (searchTerm === '') {
+        allNodes.forEach(function(node) {
+            node.style.display = '';
+        });
+        var allUls = treeContainer.querySelectorAll('ul');
+        allUls.forEach(function(ul) {
+            ul.style.display = '';
+        });
+        return;
+    }
+    // Hide all nodes first
+    allNodes.forEach(function(node) {
+        node.style.display = 'none';
+    });
+    // Show nodes where any property value matches
+    var nodeSpans = treeContainer.querySelectorAll('.node');
+    nodeSpans.forEach(function(span) {
+        var props = span.getAttribute('data-props') || '{}';
+        try {
+            var textarea = document.createElement('textarea');
+            textarea.innerHTML = props;
+            var propsObj = eval('(' + textarea.value + ')');
+            var found = false;
+            for (var key in propsObj) {
+                if (propsObj.hasOwnProperty(key)) {
+                    var value = propsObj[key];
+                    if (typeof value === 'string' && value.toLowerCase().includes(searchTerm)) {
+                        found = true;
+                        break;
+                    }
+                }
+            }
+            if (found) {
+                // Show this node and all its parents
+                var current = span.closest('li');
+                while (current) {
+                    current.style.display = '';
+                    var parentUl = current.parentElement;
+                    if (parentUl && parentUl.tagName === 'UL') {
+                        parentUl.style.display = '';
+                        var parentLi = parentUl.parentElement;
+                        if (parentLi && parentLi.tagName === 'LI') {
+                            parentLi.style.display = '';
+                            current = parentLi;
+                        } else {
+                            break;
+                        }
+                    } else {
+                        break;
+                    }
+                }
+            }
+        } catch(e) {}
+    });
+}
+
+function clearPropertyValueSearch() {
+    var input = document.getElementById('propertyValueSearch');
+    input.value = '';
+    input.focus();
+    filterTreeByPropertyValue();
+    toggleClearButton('propertyValueSearch', 'clearPropertyValueSearch');
+}
 // squish_xml_viewer.js - JavaScript functionality for the XML viewer
 
 function formatPropertiesAsTable(propsStr, searchTerm) {
@@ -444,6 +511,15 @@ document.addEventListener("click", function(e){
 document.addEventListener("DOMContentLoaded", function() {
     originalTreeHTML = document.getElementById('treeContainer').innerHTML;
 
+    // Property Value Search
+    var propertyValueSearch = document.getElementById('propertyValueSearch');
+    if (propertyValueSearch) {
+        propertyValueSearch.addEventListener('input', function() {
+            filterTreeByPropertyValue();
+            toggleClearButton('propertyValueSearch', 'clearPropertyValueSearch');
+        });
+    }
+
     // Tree context menu
     document.addEventListener('contextmenu', function(e) {
         if (e.target.classList.contains('node')) {
@@ -469,6 +545,10 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById("treeSearch").addEventListener("input", function() {
         filterTree();
         toggleClearButton('treeSearch', 'clearTreeSearch');
+        // Wenn Property-Value-Suche aktiv, Tree-Suche ignorieren
+        if (propertyValueSearch && propertyValueSearch.value.length > 0) {
+            filterTreeByPropertyValue();
+        }
     });
     document.getElementById("propsSearch").addEventListener("input", function() {
         filterAndDisplayProperties();
@@ -477,9 +557,31 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 // Hide context menus when clicking elsewhere
-document.addEventListener('click', hideContextMenus);
-document.addEventListener('contextmenu', function(e) {
+document.addEventListener('click', function(e) {
+    // Kontextmenü nur schließen, wenn außerhalb geklickt wird
     if (!e.target.closest('.context-menu')) {
         hideContextMenus();
     }
 });
+
+// Kontextmenü: Linksklick auf Menüpunkt ausführen
+function initContextMenuEvents() {
+    document.querySelectorAll('.context-menu-item').forEach(function(item) {
+        item.onclick = function(e) {
+            var type = item.getAttribute('onclick').match(/copyToClipboard\('([^']+)'\)/);
+            if (type && type[1]) {
+                copyToClipboard(type[1]);
+            }
+            hideContextMenus();
+        };
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    initContextMenuEvents();
+});
+
+// Nach jedem Laden der Seite erneut initialisieren (z.B. nach window.load_html)
+if (window.pywebview) {
+    window.addEventListener('pywebviewready', initContextMenuEvents);
+}
