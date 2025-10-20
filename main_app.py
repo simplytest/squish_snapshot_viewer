@@ -171,14 +171,14 @@ def main():
     LAST_FILE_CONFIG = '.last_opened_file'
     
     window = webview.create_window(
-        'Squish XML Viewer',
+        'Squish Snapshot Viewer',
         html="<html><body><h1>loading...</h1></body></html>",
         width=1200,
         height=800
     )
 
     def load_initial_file():
-        initial_html = "<h1>Squish XML Viewer</h1><p>Use the File > Open menu to select an XML file to view.</p>"
+        initial_html = "<h1>Squish Snapshot Viewer</h1><p>Use the File > Open menu to select an XML file to view.</p>"
         if len(sys.argv) > 1 and os.path.isfile(sys.argv[1]):
             initial_html = generate_html_from_xml(sys.argv[1])
             with open(LAST_FILE_CONFIG, 'w') as f:

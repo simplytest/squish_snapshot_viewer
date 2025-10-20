@@ -2,12 +2,12 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>XML Viewer - {TITLE}</title>
+<title>Squish Snapshot Viewer - {TITLE}</title>
 <link rel="stylesheet" href="viewer_styles.css">
 </head>
 <body>
 <div class="header">
-  <h1>Object Viewer</h1>
+  <h1>Squish Snapshot Viewer</h1>
   <div class="header-search-group">
     <label>Tree:</label>
     <div class="search-container">
@@ -69,13 +69,14 @@
 <!-- Context Menus -->
 <div id="treeContextMenu" class="context-menu">
   <div class="context-menu-item" data-type="realname">Copy realname</div>
+  <div class="context-menu-item" data-type="copy-as-object">Copy as object</div>
   <div class="context-menu-item" data-type="class">Copy class</div>
   <div class="context-menu-item" data-type="objectName">Copy objectName</div>
 </div>
 
 <div id="propsContextMenu" class="context-menu">
-  <div class="context-menu-item" data-type="propName">Copy property name</div>
   <div class="context-menu-item" data-type="propValue">Copy property value</div>
+  <div class="context-menu-item" data-type="propName">Copy property name</div>
 </div>
 
 <script src="viewer_scripts.js"></script>

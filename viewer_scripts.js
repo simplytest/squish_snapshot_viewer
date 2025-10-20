@@ -446,6 +446,43 @@ function copyToClipboard(type) {
                 textToCopy = "Property not found";
             }
         }
+    } else if (type === 'copy-as-object') {
+        what = "object";
+        if (currentContextNode) {
+            var props = currentContextNode.getAttribute("data-props") || "{}";
+            try {
+                var textarea = document.createElement('textarea');
+                textarea.innerHTML = props;
+                var decodedStr = textarea.value;
+                var propsObj = eval("(" + decodedStr + ")");
+
+                var objectName = propsObj['objectName'];
+                var namePart = objectName ? `"${objectName}"` : "None";
+                var simplifiedType = propsObj['simplifiedType'] || '';
+                
+                var extraProps = {};
+                if (propsObj['id'] && propsObj['id'] !== '') {
+                    extraProps['id'] = propsObj['id'];
+                }
+                if (propsObj['source'] && propsObj['source'] !== '') {
+                    extraProps['source'] = propsObj['source'];
+                }
+                if (propsObj['iconSource'] && propsObj['iconSource'] !== '') {
+                    extraProps['iconSource'] = propsObj['iconSource'];
+                }
+
+                var extraPropsString = Object.entries(extraProps).map(([key, value]) => `"${key}": "${value}"`).join(', ');
+
+                textToCopy = `BasePage.element(BasePage.quick_view, ${namePart}, "${simplifiedType}"`;
+                if (extraPropsString) {
+                    textToCopy += ` , **{${extraPropsString}}`;
+                }
+                textToCopy += `)`;
+
+            } catch(e) {
+                textToCopy = "Failed to generate object string";
+            }
+        }
     } else if (type === 'propName') {
         what = "Property name";
         textToCopy = currentContextPropName || "";
@@ -495,6 +532,29 @@ function hideContextMenus() {
 function showTreeContextMenu(e, node) {
     e.preventDefault();
     currentContextNode = node;
+
+    // New logic for "copy as object"
+    var props = currentContextNode.getAttribute("data-props") || "{}";
+    try {
+        var textarea = document.createElement('textarea');
+        textarea.innerHTML = props;
+        var decodedStr = textarea.value;
+        var propsObj = eval("(" + decodedStr + ")");
+        var realname = propsObj['realname'] || "";
+
+        var copyAsObjectItem = document.querySelector('[data-type="copy-as-object"]');
+        var braceCount = (realname.match(/{/g) || []).length;
+
+        if (braceCount <= 1 || (braceCount === 2 && realname.includes("type='QuickView'"))) {
+            copyAsObjectItem.style.display = 'block';
+        } else {
+            copyAsObjectItem.style.display = 'none';
+        }
+    } catch(e) {
+        var copyAsObjectItem = document.querySelector('[data-type="copy-as-object"]');
+        copyAsObjectItem.style.display = 'none';
+    }
+
     var menu = document.getElementById('treeContextMenu');
     menu.style.display = 'block';
     menu.style.left = e.pageX + 'px';

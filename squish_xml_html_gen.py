@@ -183,7 +183,7 @@ def generate_html(xml_path, html_path):
 <html>
 <head>
 <meta charset="utf-8">
-<title>XML Viewer - {TITLE}</title>
+<title>Squish Snapshot Viewer - {TITLE}</title>
 <style>
 body{{font-family: Arial, Helvetica, sans-serif; margin:0; padding:0;}}
 .header{{padding:10px; background:#2c3e50; color:white; display:flex; align-items:center; gap:15px;}}

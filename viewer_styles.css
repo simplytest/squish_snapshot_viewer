@@ -74,8 +74,7 @@ body {
 }
 
 .screenshot-panel {
-    height: 320px; 
-    padding: 10px;
+    height: 320px;
     border-bottom: 1px solid #ddd; 
     flex-shrink: 0;
     position: relative;
@@ -301,12 +300,15 @@ body {
 @keyframes pulsate {
     0% {
         transform: scale(1);
+        outline: 0px solid rgba(255, 0, 0, 0.7);
     }
     50% {
-        transform: scale(1.02);
+        transform: scale(1.01);
+        outline: 2px solid rgba(255, 0, 0, 0);
     }
     100% {
         transform: scale(1);
+        outline: 0px solid rgba(255, 0, 0, 0.7);
     }
 }
 
