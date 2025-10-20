@@ -75,9 +75,16 @@ body {
 
 .screenshot-panel {
     height: 320px; 
+    padding: 10px;
     border-bottom: 1px solid #ddd; 
     flex-shrink: 0;
     position: relative;
+}
+
+.screenshot-container {
+    position: relative; 
+    display: inline-block; 
+    max-width: 100%;
 }
 
 .properties-panel {
