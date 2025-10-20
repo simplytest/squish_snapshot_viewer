@@ -317,9 +317,12 @@ function drawElementOverlay(x, y, width, height) {
     var scaleX = imgRect.width / screenshotImg.naturalWidth;
     var scaleY = imgRect.height / screenshotImg.naturalHeight;
     
+    var offsetX = imgRect.left - containerRect.left;
+    var offsetY = imgRect.top - containerRect.top;
+
     // Calculate overlay position and size
-    var overlayX = x * scaleX;
-    var overlayY = y * scaleY;
+    var overlayX = (x * scaleX) + offsetX;
+    var overlayY = (y * scaleY) + offsetY;
     var overlayWidth = width * scaleX;
     var overlayHeight = height * scaleY;
     
