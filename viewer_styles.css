@@ -298,12 +298,25 @@ body {
     padding: 10px;
 }
 
+@keyframes pulsate {
+    0% {
+        box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(255, 0, 0, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 0, 0, 0);
+    }
+}
+
 .element-overlay {
     position: absolute; 
     border: 2px solid red; 
     background: rgba(255,0,0,0.1); 
     pointer-events: none; 
     z-index: 10;
+    animation: pulsate 2s infinite;
 }
 
 mark {
