@@ -79,6 +79,13 @@ body {
     border-bottom: 1px solid #ddd; 
     flex-shrink: 0;
     position: relative;
+    box-sizing: border-box;
+}
+
+.screenshot-container {
+    position: relative; 
+    display: inline-block; 
+    max-width: 100%;
 }
 
 .screenshot-container {
