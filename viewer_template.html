@@ -23,6 +23,13 @@
     </div>
   </div>
   <div class="header-search-group">
+    <label>Prop Values:</label>
+    <div class="search-container">
+      <input id="propertyValueSearch" placeholder="Search by property value..." style="width:150px; padding:4px; padding-right:25px;">
+      <button id="clearPropertyValueSearch" class="clear-btn" onclick="clearPropertyValueSearch()" title="Clear search">&times;</button>
+    </div>
+  </div>
+  <div class="header-search-group">
     <label>Sort:</label>
     <select id="sortOrder" onchange="refreshProperties()" style="padding:4px;">
       <option value="desc">Descending</option>
@@ -61,14 +68,14 @@
 
 <!-- Context Menus -->
 <div id="treeContextMenu" class="context-menu">
-  <div class="context-menu-item" onclick="copyToClipboard('realname')">Copy realname</div>
-  <div class="context-menu-item" onclick="copyToClipboard('class')">Copy class</div>
-  <div class="context-menu-item" onclick="copyToClipboard('objectName')">Copy objectName</div>
+  <div class="context-menu-item" data-type="realname">Copy realname</div>
+  <div class="context-menu-item" data-type="class">Copy class</div>
+  <div class="context-menu-item" data-type="objectName">Copy objectName</div>
 </div>
 
 <div id="propsContextMenu" class="context-menu">
-  <div class="context-menu-item" onclick="copyToClipboard('propName')">Copy property name</div>
-  <div class="context-menu-item" onclick="copyToClipboard('propValue')">Copy property value</div>
+  <div class="context-menu-item" data-type="propName">Copy property name</div>
+  <div class="context-menu-item" data-type="propValue">Copy property value</div>
 </div>
 
 <script src="viewer_scripts.js"></script>

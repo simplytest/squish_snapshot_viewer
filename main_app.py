@@ -5,6 +5,7 @@ import base64
 import xml.etree.ElementTree as ET
 from html import escape
 from webview.menu import Menu, MenuAction
+import json
 
 # This code is adapted from squish_xml_viewer_templated.py to avoid changing it.
 
@@ -88,7 +89,7 @@ def build_tree_html(node, counter=None):
                 prop_value = prop.find("string").text or ""
             properties[prop_name] = prop_value
     
-    data_props = escape(str(properties)).replace('"', '&quot;')
+    data_props = escape(json.dumps(properties)).replace('"', '&quot;')
     xml_snippet = ET.tostring(node, encoding='unicode')
     data_xml = escape(xml_snippet).replace('"', '&quot;')
     
@@ -167,18 +168,30 @@ def generate_html_from_xml(xml_path):
     return html
 
 def main():
-    # Wenn Dateiparameter übergeben, direkt öffnen
-    if len(sys.argv) > 1 and os.path.isfile(sys.argv[1]):
-        initial_html = generate_html_from_xml(sys.argv[1])
-    else:
-        initial_html = "<h1>Squish XML Viewer</h1><p>Use the File > Open menu to select an XML file to view.</p>"
-
+    LAST_FILE_CONFIG = '.last_opened_file'
+    
     window = webview.create_window(
         'Squish XML Viewer',
-        html=initial_html,
+        html="<html><body><h1>loading...</h1></body></html>",
         width=1200,
         height=800
     )
+
+    def load_initial_file():
+        initial_html = "<h1>Squish XML Viewer</h1><p>Use the File > Open menu to select an XML file to view.</p>"
+        if len(sys.argv) > 1 and os.path.isfile(sys.argv[1]):
+            initial_html = generate_html_from_xml(sys.argv[1])
+            with open(LAST_FILE_CONFIG, 'w') as f:
+                f.write(sys.argv[1])
+        else:
+            try:
+                with open(LAST_FILE_CONFIG, 'r') as f:
+                    last_file = f.read().strip()
+                    if os.path.isfile(last_file):
+                        initial_html = generate_html_from_xml(last_file)
+            except FileNotFoundError:
+                pass # No last file saved, show welcome screen
+        window.load_html(initial_html)
 
     def open_file():
         file_types = ["XML files (*.xml)", "All files (*.*)"]
@@ -187,6 +200,8 @@ def main():
             xml_file = result[0]
             html_content = generate_html_from_xml(xml_file)
             window.load_html(html_content)
+            with open(LAST_FILE_CONFIG, 'w') as f:
+                f.write(xml_file)
 
     def exit_app():
         window.destroy()
@@ -198,7 +213,7 @@ def main():
         ])
     ]
 
-    webview.start(menu=menu_items)
+    webview.start(menu=menu_items, func=load_initial_file)
 
 if __name__ == '__main__':
     main()

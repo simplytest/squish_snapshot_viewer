@@ -2,6 +2,13 @@ function filterTreeByPropertyValue() {
     var searchTerm = document.getElementById('propertyValueSearch').value.toLowerCase();
     var treeContainer = document.getElementById('treeContainer');
     var allNodes = treeContainer.querySelectorAll('li');
+
+    // First, remove all highlighting
+    var allSpans = treeContainer.querySelectorAll('.node');
+    allSpans.forEach(function(span) {
+        span.style.backgroundColor = '';
+    });
+
     if (searchTerm === '') {
         allNodes.forEach(function(node) {
             node.style.display = '';
@@ -35,6 +42,7 @@ function filterTreeByPropertyValue() {
                 }
             }
             if (found) {
+                span.style.backgroundColor = 'yellow';
                 // Show this node and all its parents
                 var current = span.closest('li');
                 while (current) {
@@ -67,7 +75,25 @@ function clearPropertyValueSearch() {
 }
 // squish_xml_viewer.js - JavaScript functionality for the XML viewer
 
-function formatPropertiesAsTable(propsStr, searchTerm) {
+function escapeRegExp(string) {
+  return string.replace(/[.*+?^${}()|[\\]/g, '\\$&'); // $& means the whole matched string
+}
+
+function highlightText(text, searchTerms) {
+    if (!searchTerms || searchTerms.length === 0) {
+        return text;
+    }
+    // remove empty strings
+    searchTerms = searchTerms.filter(Boolean);
+    if (searchTerms.length === 0) {
+        return text;
+    }
+    var combinedRegex = searchTerms.map(term => '(' + escapeRegExp(term) + ')').join('|');
+    var regex = new RegExp(combinedRegex, 'gi');
+    return text.toString().replace(regex, '<mark>$&</mark>');
+}
+
+function formatPropertiesAsTable(propsStr, searchTerm, highlightTerms) {
     try {
         // Decode HTML entities first
         var textarea = document.createElement('textarea');
@@ -135,7 +161,9 @@ function formatPropertiesAsTable(propsStr, searchTerm) {
             if (searchTerm === "" || 
                 key.toLowerCase().includes(searchTerm) || 
                 value.toString().toLowerCase().includes(searchTerm)) {
-                table += "<tr><td>" + key + "</td><td>" + value + "</td></tr>";
+                var highlightedKey = highlightText(key, highlightTerms);
+                var highlightedValue = highlightText(value, highlightTerms);
+                table += "<tr><td>" + highlightedKey + "</td><td>" + highlightedValue + "</td></tr>";
             }
         }
         
@@ -159,14 +187,17 @@ function formatPropertiesAsTable(propsStr, searchTerm) {
                     groupName.toLowerCase().includes(searchTerm) ||
                     displayName.toLowerCase().includes(searchTerm) || 
                     value.toString().toLowerCase().includes(searchTerm)) {
-                    groupContent += "<tr class='group-item'><td>&nbsp;&nbsp;&nbsp;&nbsp;" + displayName + "</td><td>" + value + "</td></tr>";
+                    var highlightedDisplayName = highlightText(displayName, highlightTerms);
+                    var highlightedValue = highlightText(value, highlightTerms);
+                    groupContent += "<tr class='group-item'><td>&nbsp;&nbsp;&nbsp;&nbsp;" + highlightedDisplayName + "</td><td>" + highlightedValue + "</td></tr>";
                     groupHasMatches = true;
                 }
             }
             
             // Only add group if it has matches
             if (groupHasMatches) {
-                table += "<tr class='group-header'><td colspan='2'><strong>" + groupName + "</strong></td></tr>";
+                var highlightedGroupName = highlightText(groupName, highlightTerms);
+                table += "<tr class='group-header'><td colspan='2'><strong>" + highlightedGroupName + "</strong></td></tr>";
                 table += groupContent;
             }
         }
@@ -307,8 +338,14 @@ function drawElementOverlay(x, y, width, height) {
 function filterAndDisplayProperties() {
     if (!currentPropsData) return;
     
-    var searchTerm = document.getElementById('propsSearch').value.toLowerCase();
-    var html = formatPropertiesAsTable(currentPropsData, searchTerm);
+    var propsSearchTerm = document.getElementById('propsSearch').value.toLowerCase();
+    var propertyValueSearchTerm = document.getElementById('propertyValueSearch').value.toLowerCase();
+
+    var highlightTerms = [];
+    if (propsSearchTerm) highlightTerms.push(propsSearchTerm);
+    if (propertyValueSearchTerm) highlightTerms.push(propertyValueSearchTerm);
+
+    var html = formatPropertiesAsTable(currentPropsData, propsSearchTerm, highlightTerms);
     document.getElementById("props").innerHTML = html;
 }
 
@@ -493,21 +530,7 @@ function escapeHtml(unsafe) {
          .replace(/'/g, "&#039;");
 }
 
-// Event listeners
-document.addEventListener("click", function(e){
-    if(e.target.classList.contains("node")){
-        document.querySelectorAll(".node").forEach(n=>n.classList.remove("selected"));
-        e.target.classList.add("selected");
-        currentSelectedNode = e.target;
-        var props = e.target.getAttribute("data-props") || "{}";
-        currentPropsData = props;
-        filterAndDisplayProperties();
-        updateElementOverlay();
-    }
-});
-
 // Initialize when DOM is loaded
-
 document.addEventListener("DOMContentLoaded", function() {
     originalTreeHTML = document.getElementById('treeContainer').innerHTML;
 
@@ -519,27 +542,6 @@ document.addEventListener("DOMContentLoaded", function() {
             toggleClearButton('propertyValueSearch', 'clearPropertyValueSearch');
         });
     }
-
-    // Tree context menu
-    document.addEventListener('contextmenu', function(e) {
-        if (e.target.classList.contains('node')) {
-            showTreeContextMenu(e, e.target);
-        }
-    });
-    
-    // Properties table context menu  
-    document.addEventListener('contextmenu', function(e) {
-        var targetCell = e.target.closest('.props-table td');
-        if (targetCell) {
-            var row = targetCell.parentElement;
-            // Ensure it's a property row, not a group header
-            if (row.cells.length === 2) {
-                var propName = row.cells[0].textContent.trim();
-                var propValue = row.cells[1].textContent.trim();
-                showPropsContextMenu(e, propName, propValue);
-            }
-        }
-    });
     
     // Add search functionality
     document.getElementById("treeSearch").addEventListener("input", function() {
@@ -554,34 +556,46 @@ document.addEventListener("DOMContentLoaded", function() {
         filterAndDisplayProperties();
         toggleClearButton('propsSearch', 'clearPropsSearch');
     });
-});
 
-// Hide context menus when clicking elsewhere
-document.addEventListener('click', function(e) {
-    // Kontextmenü nur schließen, wenn außerhalb geklickt wird
-    if (!e.target.closest('.context-menu')) {
-        hideContextMenus();
-    }
-});
+    // Consolidated click handler
+    document.addEventListener('click', function(e) {
+        // Node selection
+        if (e.target.classList.contains("node")) {
+            document.querySelectorAll(".node").forEach(n => n.classList.remove("selected"));
+            e.target.classList.add("selected");
+            currentSelectedNode = e.target;
+            var props = e.target.getAttribute("data-props") || "{}";
+            currentPropsData = props;
+            filterAndDisplayProperties();
+            updateElementOverlay();
+        }
 
-// Kontextmenü: Linksklick auf Menüpunkt ausführen
-function initContextMenuEvents() {
-    document.querySelectorAll('.context-menu-item').forEach(function(item) {
-        item.onclick = function(e) {
-            var type = item.getAttribute('onclick').match(/copyToClipboard\('([^']+)'\)/);
-            if (type && type[1]) {
-                copyToClipboard(type[1]);
+        // Context menu item click
+        var contextMenuItem = e.target.closest('.context-menu-item');
+        if (contextMenuItem) {
+            const type = contextMenuItem.getAttribute('data-type');
+            if (type) {
+                copyToClipboard(type);
             }
+        } else if (!e.target.closest('.context-menu')) {
             hideContextMenus();
-        };
+        }
     });
-}
 
-document.addEventListener('DOMContentLoaded', function() {
-    initContextMenuEvents();
+    // Context menu handler
+    document.addEventListener('contextmenu', function(e) {
+        if (e.target.classList.contains('node')) {
+            showTreeContextMenu(e, e.target);
+        } else {
+            var targetCell = e.target.closest('.props-table td');
+            if (targetCell) {
+                var row = targetCell.parentElement;
+                if (row.cells.length === 2) {
+                    var propName = row.cells[0].textContent.trim();
+                    var propValue = row.cells[1].textContent.trim();
+                    showPropsContextMenu(e, propName, propValue);
+                }
+            }
+        }
+    });
 });
-
-// Nach jedem Laden der Seite erneut initialisieren (z.B. nach window.load_html)
-if (window.pywebview) {
-    window.addEventListener('pywebviewready', initContextMenuEvents);
-}
