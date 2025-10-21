@@ -178,6 +178,14 @@ def generate_html_from_xml(xml_path):
 
     return html
 
+class AboutApi:
+    def __init__(self):
+        self.window = None
+
+    def close_window(self):
+        if self.window:
+            self.window.hide()
+
 def main():
     LAST_FILE_CONFIG = '.last_opened_file'
     
@@ -187,6 +195,16 @@ def main():
         width=1200,
         height=800
     )
+
+    about_api = AboutApi()
+    about_html = load_asset('about.html')
+    about_window = webview.create_window('About', html=about_html, width=400, height=400, frameless=True, hidden=True, js_api=about_api)
+    about_api.window = about_window
+
+    def on_main_window_closed():
+        about_window.destroy()
+
+    window.events.closed += on_main_window_closed
 
     def load_initial_file():
         initial_html = "<h1>Squish Snapshot Viewer</h1><p>Use the File > Open menu to select an XML file to view.</p>"
@@ -218,16 +236,7 @@ def main():
         window.destroy()
 
     def show_about_window():
-        class Api:
-            def close_window(self):
-                about_window.destroy()
-
-        try:
-            about_html = load_asset('about.html')
-            api = Api()
-            about_window = webview.create_window('About', html=about_html, width=400, height=400, frameless=True, js_api=api)
-        except FileNotFoundError as e:
-            webview.create_window('Error', html=f'<h1>{e}</h1>', width=400, height=200)
+        about_window.show()
 
     menu_items = [
         Menu('File', [
