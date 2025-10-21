@@ -4,30 +4,46 @@ This is a desktop application for viewing and inspecting Squish XML snapshot fil
 
 ## Features
 
-- View Squish XML snapshots in a tree structure.
-- Inspect properties of each element.
-- Highlight elements in the snapshot by clicking on them in the tree.
-- Copy element properties to the clipboard.
+- **Tree View**: Displays the complete object hierarchy from the Squish snapshot in a collapsible tree structure.
+- **Property Inspector**: Click on any element in the tree to view its properties, including attributes, geometry, and visual information.
+- **Embedded Screenshot**: Shows the screenshot that was captured with the snapshot.
+- **Raw XML View**: Inspect the raw XML source of the snapshot.
+- **File Loading**:
+  - Open XML files using the "File > Open" menu.
+  - Load a file from the command line: `python main_app.py <path_to_file.xml>`.
+  - The application remembers the last opened file for convenience.
 
 ## Installation
 
 1. Clone the repository or download the source code.
 2. Install the dependencies using pip:
 
-``` python
+```bash
 pip install -r requirements.txt
 ```
 
 ## Usage
 
-To run the application, execute the following command:
+To run the application, execute the following command from your terminal:
 
-``` python
+```bash
 python main_app.py
 ```
 
-You can also open an XML file directly by passing it as a command-line argument:
+### Opening Files
 
-``` python
-python main_app.py /path/to/your/snapshot.xml
+- **From the Command Line**: You can open an XML file directly by passing its path as a command-line argument:
+
+```bash
+  python main_app.py /path/to/your/snapshot.xml
 ```
+
+- **From the GUI**: Use the `File > Open` menu to browse and select a snapshot file.
+- **Last Opened**: The application will automatically reopen the last viewed snapshot on startup.
+
+### Interacting with the Viewer
+
+- **Object Tree**: Navigate the object hierarchy on the left panel. Click the arrows to expand or collapse child elements.
+- **Properties**: Click on an object name in the tree. Its properties will be displayed in the "Properties" panel on the right.
+- **Screenshot**: The captured screenshot is shown in the top right panel.
+- **Raw XML**: The full, raw XML content of the snapshot is available in the "Raw XML" tab.
