@@ -352,28 +352,70 @@ function filterAndDisplayProperties() {
     document.getElementById("props").innerHTML = html;
 }
 
-function filterTree() {
+function filterTree(nodesToDisplay = null) {
     var searchTerm = document.getElementById('treeSearch').value.toLowerCase();
     var treeContainer = document.getElementById('treeContainer');
-    
-    if (searchTerm === '') {
-        // Show all nodes
-        var allNodes = treeContainer.querySelectorAll('li');
-        allNodes.forEach(function(node) {
-            node.style.display = '';
+    var showOnlyMatchesChecked = document.getElementById('showOnlyMatches').checked;
+
+    // First, ensure all nodes are visible to reset the state
+    var allNodes = treeContainer.querySelectorAll('li');
+    allNodes.forEach(function(node) {
+        node.style.display = '';
+    });
+    var allUls = treeContainer.querySelectorAll('ul');
+    allUls.forEach(function(ul) {
+        ul.style.display = '';
+    });
+
+    if (nodesToDisplay && nodesToDisplay.length > 0) {
+        // Filtering based on provided nodes (e.g., from screenshot click)
+        if (showOnlyMatchesChecked) {
+            // Hide all nodes first if showOnlyMatches is checked
+            allNodes.forEach(function(node) {
+                node.style.display = 'none';
+            });
+        }
+
+        nodesToDisplay.forEach(function(nodeSpan) {
+            // Show this node and all its parents
+            var current = nodeSpan.closest('li');
+            while (current) {
+                current.style.display = '';
+                var parentUl = current.parentElement;
+                if (parentUl && parentUl.tagName === 'UL') {
+                    parentUl.style.display = '';
+                    var parentLi = parentUl.parentElement;
+                    if (parentLi && parentLi.tagName === 'LI') {
+                        parentLi.style.display = '';
+                        current = parentLi;
+                    } else {
+                        break;
+                    }
+                } else {
+                    break;
+                }
+            }
         });
-        var allUls = treeContainer.querySelectorAll('ul');
-        allUls.forEach(function(ul) {
-            ul.style.display = '';
-        });
-    } else {
-        // Hide all nodes first
-        var allNodes = treeContainer.querySelectorAll('li');
-        allNodes.forEach(function(node) {
-            node.style.display = 'none';
-        });
-        
-        // Show matching nodes and their parents
+    } else if (searchTerm !== '') {
+        // Filtering based on text search
+        if (showOnlyMatchesChecked) {
+            // Hide all nodes first if showOnlyMatches is checked
+            allNodes.forEach(function(node) {
+                node.style.display = 'none';
+            });
+        } else {
+            // If not checked, ensure all nodes are visible before filtering
+            // This block is technically redundant due to the initial reset, but kept for clarity if logic changes.
+            var allNodes = treeContainer.querySelectorAll('li');
+            allNodes.forEach(function(node) {
+                node.style.display = '';
+            });
+            var allUls = treeContainer.querySelectorAll('ul');
+            allUls.forEach(function(ul) {
+                ul.style.display = '';
+            });
+        }
+
         var nodeSpans = treeContainer.querySelectorAll('.node');
         nodeSpans.forEach(function(span) {
             if (span.textContent.toLowerCase().includes(searchTerm)) {
@@ -381,7 +423,6 @@ function filterTree() {
                 var current = span.closest('li');
                 while (current) {
                     current.style.display = '';
-                    // Show parent ul and li
                     var parentUl = current.parentElement;
                     if (parentUl && parentUl.tagName === 'UL') {
                         parentUl.style.display = '';
@@ -399,6 +440,7 @@ function filterTree() {
             }
         });
     }
+    // If both nodesToDisplay and searchTerm are empty, all nodes are already visible from the reset at the beginning.
 }
 
 function toggleClearButton(inputId, buttonId) {
@@ -659,6 +701,9 @@ function findElementsByCoordinates(x, y) {
             node.classList.add('highlight');
         });
         document.getElementById('clearHighlight').style.display = 'block';
+        filterTree(matchingNodes); // Call filterTree with the matching nodes
+    } else {
+        filterTree([]); // If no nodes match, ensure the tree is reset (all visible if checkbox is off)
     }
 }
 
@@ -688,6 +733,14 @@ document.addEventListener("DOMContentLoaded", function() {
         filterAndDisplayProperties();
         toggleClearButton('propsSearch', 'clearPropsSearch');
     });
+
+    // Add event listener for showOnlyMatches checkbox
+    var showOnlyMatchesCheckbox = document.getElementById('showOnlyMatches');
+    if (showOnlyMatchesCheckbox) {
+        showOnlyMatchesCheckbox.addEventListener('change', function() {
+            filterTree();
+        });
+    }
 
     // Screenshot click handler
     var screenshotContainer = document.getElementById('screenshotContainer');
