@@ -213,6 +213,7 @@ def main():
         ])
     ]
 
+    webview.settings['OPEN_DEVTOOLS_IN_DEBUG'] = False
     webview.start(menu=menu_items, func=load_initial_file, debug=True)
 
 if __name__ == '__main__':

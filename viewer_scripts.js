@@ -594,7 +594,6 @@ function escapeHtml(unsafe) {
 }
 
 function findElementsByCoordinates(x, y) {
-    console.log("findElementsByCoordinates called with:", x, y);
     var screenshotImg = document.querySelector('.screenshot');
     if (!screenshotImg) return;
 
@@ -624,11 +623,9 @@ function findElementsByCoordinates(x, y) {
 
     var scaleX = screenshotImg.naturalWidth / screenshotImg.width;
     var scaleY = screenshotImg.naturalHeight / screenshotImg.height;
-    console.log("Scale factors:", scaleX, scaleY);
 
     var clickX = (x * scaleX) + screenshotGeometry.x;
     var clickY = (y * scaleY) + screenshotGeometry.y;
-    console.log("Scaled and adjusted click coordinates:", clickX, clickY);
 
     var allNodes = document.querySelectorAll('.node');
     allNodes.forEach(function(node) {
@@ -652,7 +649,6 @@ function findElementsByCoordinates(x, y) {
                 if (clickX >= elemX && clickX <= elemX + elemWidth &&
                     clickY >= elemY && clickY <= elemY + elemHeight) {
                     matchingNodes.push(node);
-                    console.log("Found matching node:", node, propsObj);
                 }
             }
         } catch (e) {}
