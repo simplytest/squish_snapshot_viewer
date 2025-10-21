@@ -1,6 +1,99 @@
+function filterTreeByPropertyValue() {
+    var searchTerm = document.getElementById('propertyValueSearch').value.toLowerCase();
+    var treeContainer = document.getElementById('treeContainer');
+    var allNodes = treeContainer.querySelectorAll('li');
+
+    // First, remove all highlighting
+    var allSpans = treeContainer.querySelectorAll('.node');
+    allSpans.forEach(function(span) {
+        span.style.backgroundColor = '';
+    });
+
+    if (searchTerm === '') {
+        allNodes.forEach(function(node) {
+            node.style.display = '';
+        });
+        var allUls = treeContainer.querySelectorAll('ul');
+        allUls.forEach(function(ul) {
+            ul.style.display = '';
+        });
+        return;
+    }
+    // Hide all nodes first
+    allNodes.forEach(function(node) {
+        node.style.display = 'none';
+    });
+    // Show nodes where any property value matches
+    var nodeSpans = treeContainer.querySelectorAll('.node');
+    nodeSpans.forEach(function(span) {
+        var props = span.getAttribute('data-props') || '{}';
+        try {
+            var textarea = document.createElement('textarea');
+            textarea.innerHTML = props;
+            var propsObj = eval('(' + textarea.value + ')');
+            var found = false;
+            for (var key in propsObj) {
+                if (propsObj.hasOwnProperty(key)) {
+                    var value = propsObj[key];
+                    if (typeof value === 'string' && value.toLowerCase().includes(searchTerm)) {
+                        found = true;
+                        break;
+                    }
+                }
+            }
+            if (found) {
+                span.style.backgroundColor = 'yellow';
+                // Show this node and all its parents
+                var current = span.closest('li');
+                while (current) {
+                    current.style.display = '';
+                    var parentUl = current.parentElement;
+                    if (parentUl && parentUl.tagName === 'UL') {
+                        parentUl.style.display = '';
+                        var parentLi = parentUl.parentElement;
+                        if (parentLi && parentLi.tagName === 'LI') {
+                            parentLi.style.display = '';
+                            current = parentLi;
+                        } else {
+                            break;
+                        }
+                    } else {
+                        break;
+                    }
+                }
+            }
+        } catch(e) {}
+    });
+}
+
+function clearPropertyValueSearch() {
+    var input = document.getElementById('propertyValueSearch');
+    input.value = '';
+    input.focus();
+    filterTreeByPropertyValue();
+    toggleClearButton('propertyValueSearch', 'clearPropertyValueSearch');
+}
 // squish_xml_viewer.js - JavaScript functionality for the XML viewer
 
-function formatPropertiesAsTable(propsStr, searchTerm) {
+function escapeRegExp(string) {
+  return string.replace(/[.*+?^${}()|[\/]/g, '\$&'); // $& means the whole matched string
+}
+
+function highlightText(text, searchTerms) {
+    if (!searchTerms || searchTerms.length === 0) {
+        return text;
+    }
+    // remove empty strings
+    searchTerms = searchTerms.filter(Boolean);
+    if (searchTerms.length === 0) {
+        return text;
+    }
+    var combinedRegex = searchTerms.map(term => '(' + escapeRegExp(term) + ')').join('|');
+    var regex = new RegExp(combinedRegex, 'gi');
+    return text.toString().replace(regex, '<mark>$&</mark>');
+}
+
+function formatPropertiesAsTable(propsStr, searchTerm, highlightTerms) {
     try {
         // Decode HTML entities first
         var textarea = document.createElement('textarea');
@@ -68,7 +161,9 @@ function formatPropertiesAsTable(propsStr, searchTerm) {
             if (searchTerm === "" || 
                 key.toLowerCase().includes(searchTerm) || 
                 value.toString().toLowerCase().includes(searchTerm)) {
-                table += "<tr><td>" + key + "</td><td>" + value + "</td></tr>";
+                var highlightedKey = highlightText(key, highlightTerms);
+                var highlightedValue = highlightText(value, highlightTerms);
+                table += "<tr><td>" + highlightedKey + "</td><td>" + highlightedValue + "</td></tr>";
             }
         }
         
@@ -92,14 +187,17 @@ function formatPropertiesAsTable(propsStr, searchTerm) {
                     groupName.toLowerCase().includes(searchTerm) ||
                     displayName.toLowerCase().includes(searchTerm) || 
                     value.toString().toLowerCase().includes(searchTerm)) {
-                    groupContent += "<tr class='group-item'><td>&nbsp;&nbsp;&nbsp;&nbsp;" + displayName + "</td><td>" + value + "</td></tr>";
+                    var highlightedDisplayName = highlightText(displayName, highlightTerms);
+                    var highlightedValue = highlightText(value, highlightTerms);
+                    groupContent += "<tr class='group-item'><td>&nbsp;&nbsp;&nbsp;&nbsp;" + highlightedDisplayName + "</td><td>" + highlightedValue + "</td></tr>";
                     groupHasMatches = true;
                 }
             }
             
             // Only add group if it has matches
             if (groupHasMatches) {
-                table += "<tr class='group-header'><td colspan='2'><strong>" + groupName + "</strong></td></tr>";
+                var highlightedGroupName = highlightText(groupName, highlightTerms);
+                table += "<tr class='group-header'><td colspan='2'><strong>" + highlightedGroupName + "</strong></td></tr>";
                 table += groupContent;
             }
         }
@@ -219,9 +317,12 @@ function drawElementOverlay(x, y, width, height) {
     var scaleX = imgRect.width / screenshotImg.naturalWidth;
     var scaleY = imgRect.height / screenshotImg.naturalHeight;
     
+    var offsetX = imgRect.left - containerRect.left;
+    var offsetY = imgRect.top - containerRect.top;
+
     // Calculate overlay position and size
-    var overlayX = x * scaleX;
-    var overlayY = y * scaleY;
+    var overlayX = (x * scaleX) + offsetX - 2; // 2px left
+    var overlayY = (y * scaleY) + offsetY - 2; // 2px up
     var overlayWidth = width * scaleX;
     var overlayHeight = height * scaleY;
     
@@ -240,58 +341,86 @@ function drawElementOverlay(x, y, width, height) {
 function filterAndDisplayProperties() {
     if (!currentPropsData) return;
     
-    var searchTerm = document.getElementById('propsSearch').value.toLowerCase();
-    var html = formatPropertiesAsTable(currentPropsData, searchTerm);
+    var propsSearchTerm = document.getElementById('propsSearch').value.toLowerCase();
+    var propertyValueSearchTerm = document.getElementById('propertyValueSearch').value.toLowerCase();
+
+    var highlightTerms = [];
+    if (propsSearchTerm) highlightTerms.push(propsSearchTerm);
+    if (propertyValueSearchTerm) highlightTerms.push(propertyValueSearchTerm);
+
+    var html = formatPropertiesAsTable(currentPropsData, propsSearchTerm, highlightTerms);
     document.getElementById("props").innerHTML = html;
 }
 
-function filterTree() {
+function filterTree(nodesToDisplay = null) {
     var searchTerm = document.getElementById('treeSearch').value.toLowerCase();
     var treeContainer = document.getElementById('treeContainer');
-    
-    if (searchTerm === '') {
-        // Show all nodes
-        var allNodes = treeContainer.querySelectorAll('li');
-        allNodes.forEach(function(node) {
-            node.style.display = '';
-        });
-        var allUls = treeContainer.querySelectorAll('ul');
-        allUls.forEach(function(ul) {
-            ul.style.display = '';
-        });
-    } else {
-        // Hide all nodes first
-        var allNodes = treeContainer.querySelectorAll('li');
-        allNodes.forEach(function(node) {
-            node.style.display = 'none';
-        });
-        
-        // Show matching nodes and their parents
+    var showOnlyMatchesChecked = document.getElementById('showOnlyMatches').checked;
+
+    // First, remove all highlighting
+    var allSpans = treeContainer.querySelectorAll('.node');
+    allSpans.forEach(function(span) {
+        span.style.backgroundColor = '';
+    });
+
+    // Reset all nodes to visible initially
+    var allNodes = treeContainer.querySelectorAll('li');
+    allNodes.forEach(function(node) {
+        node.style.display = '';
+    });
+    var allUls = treeContainer.querySelectorAll('ul');
+    allUls.forEach(function(ul) {
+        ul.style.display = '';
+    });
+
+    // Determine the set of nodes to consider for display
+    var nodesToProcess = [];
+    if (nodesToDisplay && nodesToDisplay.length > 0) {
+        // If specific nodes are provided (e.g., from screenshot click)
+        nodesToProcess = nodesToDisplay;
+    } else if (searchTerm !== '') {
+        // If text search term is present
         var nodeSpans = treeContainer.querySelectorAll('.node');
         nodeSpans.forEach(function(span) {
             if (span.textContent.toLowerCase().includes(searchTerm)) {
-                // Show this node and all its parents
-                var current = span.closest('li');
-                while (current) {
-                    current.style.display = '';
-                    // Show parent ul and li
-                    var parentUl = current.parentElement;
-                    if (parentUl && parentUl.tagName === 'UL') {
-                        parentUl.style.display = '';
-                        var parentLi = parentUl.parentElement;
-                        if (parentLi && parentLi.tagName === 'LI') {
-                            parentLi.style.display = '';
-                            current = parentLi;
-                        } else {
-                            break;
-                        }
-                    } else {
-                        break;
-                    }
-                }
+                nodesToProcess.push(span);
             }
         });
+    } else {
+        // No specific nodes and no search term, so all nodes should remain visible (already reset above)
+        return; 
     }
+
+    // Apply filtering based on showOnlyMatchesChecked
+    if (showOnlyMatchesChecked && (nodesToProcess.length > 0 || searchTerm !== '')) {
+        // If showOnlyMatches is checked and there are nodes to process or a search term,
+        // hide all nodes first, then show only the matching ones and their parents.
+        allNodes.forEach(function(node) {
+            node.style.display = 'none';
+        });
+    }
+
+    // Show the nodes that match the criteria and their parents
+    nodesToProcess.forEach(function(nodeSpan) {
+        nodeSpan.style.backgroundColor = 'yellow'; // Highlight the node
+        var current = nodeSpan.closest('li');
+        while (current) {
+            current.style.display = '';
+            var parentUl = current.parentElement;
+            if (parentUl && parentUl.tagName === 'UL') {
+                parentUl.style.display = '';
+                var parentLi = parentUl.parentElement;
+                if (parentLi && parentLi.tagName === 'LI') {
+                    parentLi.style.display = '';
+                    current = parentLi;
+                } else {
+                    break;
+                }
+            } else {
+                break;
+            }
+        }
+    });
 }
 
 function toggleClearButton(inputId, buttonId) {
@@ -337,6 +466,47 @@ function copyToClipboard(type) {
                 textToCopy = propsObj[type] || "";
             } catch(e) {
                 textToCopy = "Property not found";
+            }
+        }
+    } else if (type === 'copy-as-object') {
+        what = "object";
+        if (currentContextNode) {
+            var props = currentContextNode.getAttribute("data-props") || "{}";
+            try {
+                var textarea = document.createElement('textarea');
+                textarea.innerHTML = props;
+                var decodedStr = textarea.value;
+                var propsObj = eval("(" + decodedStr + ")");
+
+                var objectName = propsObj['objectName'];
+                var namePart = objectName ? `"${objectName}"` : "None";
+                var simplifiedType = propsObj['simplifiedType'] || '';
+                
+                var extraProps = {};
+                var realnameAttrs = {};
+                // Parse realname and merge attributes
+                if (propsObj['realname']) {
+                    realnameAttrs = parseRealnameAttributes(propsObj['realname'], attributeWhitelist);
+                    extraProps = Object.assign(extraProps, realnameAttrs);
+                }
+
+                // Add whitelisted properties from propsObj if not already in realname
+                for (var key in propsObj) {
+                    if (attributeWhitelist.includes(key) && propsObj[key] !== '' && !realnameAttrs.hasOwnProperty(key)) {
+                        extraProps[key] = propsObj[key];
+                    }
+                }
+
+                var extraPropsString = Object.entries(extraProps).map(([key, value]) => `"${key}": "${value}"`).join(', ');
+
+                textToCopy = `BasePage.element(BasePage.quick_view, ${namePart}, "${simplifiedType}"`;
+                if (extraPropsString) {
+                    textToCopy += ` , **{${extraPropsString}}`;
+                }
+                textToCopy += `)`;
+
+            } catch(e) {
+                textToCopy = "Failed to generate object string";
             }
         }
     } else if (type === 'propName') {
@@ -388,6 +558,29 @@ function hideContextMenus() {
 function showTreeContextMenu(e, node) {
     e.preventDefault();
     currentContextNode = node;
+
+    // New logic for "copy as object"
+    var props = currentContextNode.getAttribute("data-props") || "{}";
+    try {
+        var textarea = document.createElement('textarea');
+        textarea.innerHTML = props;
+        var decodedStr = textarea.value;
+        var propsObj = eval("(" + decodedStr + ")");
+        var realname = propsObj['realname'] || "";
+
+        var copyAsObjectItem = document.querySelector('[data-type="copy-as-object"]');
+        var braceCount = (realname.match(/{/g) || []).length;
+
+        if (braceCount <= 1 || (braceCount === 2 && realname.includes("type='QuickView'"))) {
+            copyAsObjectItem.style.display = 'block';
+        } else {
+            copyAsObjectItem.style.display = 'none';
+        }
+    } catch(e) {
+        var copyAsObjectItem = document.querySelector('[data-type="copy-as-object"]');
+        copyAsObjectItem.style.display = 'none';
+    }
+
     var menu = document.getElementById('treeContextMenu');
     menu.style.display = 'block';
     menu.style.left = e.pageX + 'px';
@@ -426,64 +619,201 @@ function escapeHtml(unsafe) {
          .replace(/'/g, "&#039;");
 }
 
-// Event listeners
-document.addEventListener("click", function(e){
-    if(e.target.classList.contains("node")){
-        document.querySelectorAll(".node").forEach(n=>n.classList.remove("selected"));
-        e.target.classList.add("selected");
-        currentSelectedNode = e.target;
-        var props = e.target.getAttribute("data-props") || "{}";
-        currentPropsData = props;
-        filterAndDisplayProperties();
-        updateElementOverlay();
+// Helper function to parse attributes from realname string
+function parseRealnameAttributes(realnameString, whitelist) {
+    var attributes = {};
+    whitelist.forEach(function(key) {
+        var regex = new RegExp(key + "='([^']*)'");
+        var match = realnameString.match(regex);
+        if (match) {
+            attributes[key] = match[1];
+        }
+    });
+    return attributes;
+}
+
+function findElementsByCoordinates(x, y) {
+    var screenshotImg = document.querySelector('.screenshot');
+    if (!screenshotImg) return;
+
+    if (!screenshotGeometry) {
+        // Try to find screenshot geometry from the first element with geometry
+        var allNodes = document.querySelectorAll('.node');
+        for (var i = 0; i < allNodes.length; i++) {
+            var nodeProps = allNodes[i].getAttribute("data-props") || "{}";
+            try {
+                var nodeTextarea = document.createElement('textarea');
+                nodeTextarea.innerHTML = nodeProps;
+                var nodeDecoded = nodeTextarea.value;
+                var nodePropsObj = eval("(" + nodeDecoded + ")");
+                if (nodePropsObj['geometry_x'] !== undefined) {
+                    screenshotGeometry = {
+                        x: parseInt(nodePropsObj['geometry_x']) || 0,
+                        y: parseInt(nodePropsObj['geometry_y']) || 0
+                    };
+                    break;
+                }
+            } catch(e) {}
+        }
+        if (!screenshotGeometry) {
+            screenshotGeometry = {x: 0, y: 0}; // Default fallback
+        }
     }
-});
+
+    var scaleX = screenshotImg.naturalWidth / screenshotImg.width;
+    var scaleY = screenshotImg.naturalHeight / screenshotImg.height;
+
+    var clickX = (x * scaleX) + screenshotGeometry.x;
+    var clickY = (y * scaleY) + screenshotGeometry.y;
+
+    var allNodes = document.querySelectorAll('.node');
+    allNodes.forEach(function(node) {
+        node.classList.remove('highlight');
+    });
+
+    var matchingNodes = [];
+    allNodes.forEach(function(node) {
+        var props = node.getAttribute('data-props') || '{}';
+        try {
+            var textarea = document.createElement('textarea');
+            textarea.innerHTML = props;
+            var propsObj = eval('(' + textarea.value + ')');
+
+            var elemX = parseInt(propsObj['geometry_x']);
+            var elemY = parseInt(propsObj['geometry_y']);
+            var elemWidth = parseInt(propsObj['geometry_width']);
+            var elemHeight = parseInt(propsObj['geometry_height']);
+
+            if (!isNaN(elemX) && !isNaN(elemY) && !isNaN(elemWidth) && !isNaN(elemHeight)) {
+                if (clickX >= elemX && clickX <= elemX + elemWidth &&
+                    clickY >= elemY && clickY <= elemY + elemHeight) {
+                    matchingNodes.push(node);
+                }
+            }
+        } catch (e) {}
+    });
+
+    if (matchingNodes.length > 0) {
+        matchingNodes.forEach(function(node) {
+            node.classList.add('highlight');
+        });
+        document.getElementById('clearHighlight').style.display = 'block';
+        filterTree(matchingNodes); // Call filterTree with the matching nodes
+    } else {
+        filterTree([]); // If no nodes match, ensure the tree is reset (all visible if checkbox is off)
+    }
+}
 
 // Initialize when DOM is loaded
 document.addEventListener("DOMContentLoaded", function() {
     originalTreeHTML = document.getElementById('treeContainer').innerHTML;
-    
-    // Tree context menu
-    document.addEventListener('contextmenu', function(e) {
-        if (e.target.classList.contains('node')) {
-            showTreeContextMenu(e, e.target);
-        }
-    });
-    
-    // Properties table context menu  
-    document.addEventListener('contextmenu', function(e) {
-        var targetCell = e.target.closest('.props-table td');
-        if (targetCell) {
-            var row = targetCell.parentElement;
-            // Ensure it's a property row, not a group header
-            if (row.cells.length === 2) {
-                var propName = row.cells[0].textContent.trim();
-                var propValue = row.cells[1].textContent.trim();
-                showPropsContextMenu(e, propName, propValue);
-            }
-        }
-    });
+
+    // Property Value Search
+    var propertyValueSearch = document.getElementById('propertyValueSearch');
+    if (propertyValueSearch) {
+        propertyValueSearch.addEventListener('input', function() {
+            filterTreeByPropertyValue();
+            toggleClearButton('propertyValueSearch', 'clearPropertyValueSearch');
+        });
+    }
     
     // Add search functionality
     document.getElementById("treeSearch").addEventListener("input", function() {
         filterTree();
         toggleClearButton('treeSearch', 'clearTreeSearch');
+        // Wenn Property-Value-Suche aktiv, Tree-Suche ignorieren
+        if (propertyValueSearch && propertyValueSearch.value.length > 0) {
+            filterTreeByPropertyValue();
+        }
     });
     document.getElementById("propsSearch").addEventListener("input", function() {
         filterAndDisplayProperties();
         toggleClearButton('propsSearch', 'clearPropsSearch');
     });
-});
 
-// Hide context menus when clicking elsewhere
-document.addEventListener('click', hideContextMenus);
-document.addEventListener('contextmenu', function(e) {
-    if (!e.target.closest('.context-menu')) {
-        hideContextMenus();
+    // Add event listener for showOnlyMatches checkbox
+    var showOnlyMatchesCheckbox = document.getElementById('showOnlyMatches');
+    if (showOnlyMatchesCheckbox) {
+        showOnlyMatchesCheckbox.addEventListener('change', function() {
+            filterTree();
+        });
     }
-});
 
-// Update overlay when window is resized
-window.addEventListener('resize', function() {
-    setTimeout(updateElementOverlay, 100);
+    // Screenshot click handler
+    var screenshotContainer = document.getElementById('screenshotContainer');
+    if (screenshotContainer) {
+        screenshotContainer.addEventListener('click', function(e) {
+            var screenshotImg = document.querySelector('.screenshot');
+            if (!screenshotImg) return;
+
+            var rect = screenshotImg.getBoundingClientRect();
+            var x = e.clientX - rect.left;
+            var y = e.clientY - rect.top;
+
+            findElementsByCoordinates(x, y);
+        });
+    }
+
+    // Clear Highlight button
+    var clearHighlightButton = document.getElementById('clearHighlight');
+    if (clearHighlightButton) {
+        clearHighlightButton.addEventListener('click', function() {
+            var allNodes = document.querySelectorAll('.node');
+            allNodes.forEach(function(node) {
+                node.classList.remove('highlight');
+            });
+            clearHighlightButton.style.display = 'none';
+        });
+    }
+
+    // Consolidated click handler
+    document.addEventListener('click', function(e) {
+        // Node selection
+        if (e.target.classList.contains("node")) {
+            document.querySelectorAll(".node").forEach(n => n.classList.remove("selected"));
+            e.target.classList.add("selected");
+            currentSelectedNode = e.target;
+            var props = e.target.getAttribute("data-props") || "{}";
+            currentPropsData = props;
+            filterAndDisplayProperties();
+            updateElementOverlay();
+        }
+
+        // Context menu item click
+        var contextMenuItem = e.target.closest('.context-menu-item');
+        if (contextMenuItem) {
+            const type = contextMenuItem.getAttribute('data-type');
+            if (type) {
+                copyToClipboard(type);
+            }
+        } else if (!e.target.closest('.context-menu')) {
+            hideContextMenus();
+        }
+
+        // Toggle tree nodes
+        if (e.target.classList.contains('toggle')) {
+            var nested = e.target.parentElement.querySelector('.nested');
+            if (nested) {
+                nested.classList.toggle('collapsed');
+                e.target.textContent = nested.classList.contains('collapsed') ? '+' : '-';
+            }
+        }
+    });
+
+    // Context menu handler
+    document.addEventListener('contextmenu', function(e) {
+        if (e.target.classList.contains('node')) {
+            showTreeContextMenu(e, e.target);
+        } else {
+            var targetCell = e.target.closest('.props-table td');
+            if (targetCell) {
+                var row = targetCell.parentElement;
+                if (row.cells.length === 2) {
+                    var propName = row.cells[0].textContent.trim();
+                    var propValue = row.cells[1].textContent.trim();
+                    showPropsContextMenu(e, propName, propValue);
+                }
+            }
+        }
+    });
 });
