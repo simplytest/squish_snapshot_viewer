@@ -120,12 +120,17 @@ body {
 }
 
 .tree {
-    list-style: none; 
-    padding-left: 20px;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.tree ul {
+    padding-left: 10px;
 }
 
 .tree li {
-    margin: 2px 0;
+    margin: 1px 0;
 }
 
 .node {
@@ -134,6 +139,7 @@ body {
     padding: 2px 6px; 
     border-radius: 4px;
     position: relative;
+    font-size: 12px;
 }
 
 .node:hover {
@@ -324,4 +330,22 @@ body {
 mark {
     background-color: yellow;
     padding: 0;
+}
+
+.toggle {
+    cursor: pointer;
+    padding-right: 5px;
+    user-select: none;
+}
+
+.nested {
+    /* transition: max-height 0.2s ease-out; */
+}
+
+.collapsed {
+    display: none;
+}
+
+.node.highlight {
+    background-color: #f0ad4e;
 }

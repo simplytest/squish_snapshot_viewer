@@ -76,7 +76,7 @@ function clearPropertyValueSearch() {
 // squish_xml_viewer.js - JavaScript functionality for the XML viewer
 
 function escapeRegExp(string) {
-  return string.replace(/[.*+?^${}()|[\\]/g, '\\$&'); // $& means the whole matched string
+  return string.replace(/[.*+?^${}()|[\/]/g, '\$&'); // $& means the whole matched string
 }
 
 function highlightText(text, searchTerms) {
@@ -593,8 +593,55 @@ function escapeHtml(unsafe) {
          .replace(/'/g, "&#039;");
 }
 
+function findElementsByCoordinates(x, y) {
+    console.log("findElementsByCoordinates called with:", x, y);
+    var screenshotImg = document.querySelector('.screenshot');
+    if (!screenshotImg) return;
+
+    var scaleX = screenshotImg.naturalWidth / screenshotImg.width;
+    var scaleY = screenshotImg.naturalHeight / screenshotImg.height;
+
+    var clickX = x * scaleX;
+    var clickY = y * scaleY;
+
+    var allNodes = document.querySelectorAll('.node');
+    allNodes.forEach(function(node) {
+        node.classList.remove('highlight');
+    });
+
+    var matchingNodes = [];
+    allNodes.forEach(function(node) {
+        var props = node.getAttribute('data-props') || '{}';
+        try {
+            var textarea = document.createElement('textarea');
+            textarea.innerHTML = props;
+            var propsObj = eval('(' + textarea.value + ')');
+
+            var elemX = parseInt(propsObj['geometry_x']);
+            var elemY = parseInt(propsObj['geometry_y']);
+            var elemWidth = parseInt(propsObj['geometry_width']);
+            var elemHeight = parseInt(propsObj['geometry_height']);
+
+            if (!isNaN(elemX) && !isNaN(elemY) && !isNaN(elemWidth) && !isNaN(elemHeight)) {
+                if (clickX >= elemX && clickX <= elemX + elemWidth &&
+                    clickY >= elemY && clickY <= elemY + elemHeight) {
+                    matchingNodes.push(node);
+                }
+            }
+        } catch (e) {}
+    });
+
+    if (matchingNodes.length > 0) {
+        matchingNodes.forEach(function(node) {
+            node.classList.add('highlight');
+        });
+        document.getElementById('clearHighlight').style.display = 'block';
+    }
+}
+
 // Initialize when DOM is loaded
 document.addEventListener("DOMContentLoaded", function() {
+    console.log("DOM content loaded");
     originalTreeHTML = document.getElementById('treeContainer').innerHTML;
 
     // Property Value Search
@@ -620,8 +667,38 @@ document.addEventListener("DOMContentLoaded", function() {
         toggleClearButton('propsSearch', 'clearPropsSearch');
     });
 
+    // Screenshot click handler
+    var screenshotContainer = document.getElementById('screenshotContainer');
+    if (screenshotContainer) {
+        screenshotContainer.addEventListener('click', function(e) {
+            console.log("Screenshot container clicked");
+            var screenshotImg = document.querySelector('.screenshot');
+            if (!screenshotImg) return;
+
+            var rect = screenshotImg.getBoundingClientRect();
+            var x = e.clientX - rect.left;
+            var y = e.clientY - rect.top;
+
+            findElementsByCoordinates(x, y);
+        });
+    }
+
+    // Clear Highlight button
+    var clearHighlightButton = document.getElementById('clearHighlight');
+    if (clearHighlightButton) {
+        clearHighlightButton.addEventListener('click', function() {
+            console.log("Clear highlight button clicked");
+            var allNodes = document.querySelectorAll('.node');
+            allNodes.forEach(function(node) {
+                node.classList.remove('highlight');
+            });
+            clearHighlightButton.style.display = 'none';
+        });
+    }
+
     // Consolidated click handler
     document.addEventListener('click', function(e) {
+        console.log("Document clicked", e.target);
         // Node selection
         if (e.target.classList.contains("node")) {
             document.querySelectorAll(".node").forEach(n => n.classList.remove("selected"));
@@ -642,6 +719,15 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         } else if (!e.target.closest('.context-menu')) {
             hideContextMenus();
+        }
+
+        // Toggle tree nodes
+        if (e.target.classList.contains('toggle')) {
+            var nested = e.target.parentElement.querySelector('.nested');
+            if (nested) {
+                nested.classList.toggle('collapsed');
+                e.target.textContent = nested.classList.contains('collapsed') ? '+' : '-';
+            }
         }
     });
 

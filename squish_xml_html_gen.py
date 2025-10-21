@@ -117,9 +117,6 @@ def build_tree_html(node, counter=None):
     xml_snippet = ET.tostring(node, encoding='unicode')
     data_xml = escape(xml_snippet).replace('"', '&quot;')
     
-    html_parts = []
-    html_parts.append(f'<li><span class="node" data-id="{myid}" data-props="{data_props}" data-xml="{data_xml}">{escape(label)}</span>')
-    
     # Process children (look for 'children' element or direct child elements)
     children = []
     children_elem = node.find("children")
@@ -128,13 +125,25 @@ def build_tree_html(node, counter=None):
     else:
         # Look for direct element children
         children = [child for child in node if child.tag == "element"]
+
+    has_children = bool(children)
     
-    if children:
-        html_parts.append("<ul>")
+    html_parts = []
+    li_class = "collapsible" if has_children else ""
+    html_parts.append(f'<li class="{li_class}">')
+
+    if has_children:
+        html_parts.append('<span class="toggle">+</span>')
+
+    html_parts.append(f'<span class="node" data-id="{myid}" data-props="{data_props}" data-xml="{data_xml}">{escape(label)}</span>')
+    
+    if has_children:
+        html_parts.append('<ul class="nested collapsed">')
         for child in children:
             frag = build_tree_html(child, counter)[0]
             html_parts.append(frag)
         html_parts.append("</ul>")
+
     html_parts.append("</li>")
     return ("\n".join(html_parts), counter["i"])
 
