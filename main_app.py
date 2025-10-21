@@ -213,7 +213,7 @@ def main():
         ])
     ]
 
-    webview.start(menu=menu_items, func=load_initial_file)
+    webview.start(menu=menu_items, func=load_initial_file, debug=True)
 
 if __name__ == '__main__':
     main()

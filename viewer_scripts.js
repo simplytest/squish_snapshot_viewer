@@ -598,11 +598,37 @@ function findElementsByCoordinates(x, y) {
     var screenshotImg = document.querySelector('.screenshot');
     if (!screenshotImg) return;
 
+    if (!screenshotGeometry) {
+        // Try to find screenshot geometry from the first element with geometry
+        var allNodes = document.querySelectorAll('.node');
+        for (var i = 0; i < allNodes.length; i++) {
+            var nodeProps = allNodes[i].getAttribute("data-props") || "{}";
+            try {
+                var nodeTextarea = document.createElement('textarea');
+                nodeTextarea.innerHTML = nodeProps;
+                var nodeDecoded = nodeTextarea.value;
+                var nodePropsObj = eval("(" + nodeDecoded + ")");
+                if (nodePropsObj['geometry_x'] !== undefined) {
+                    screenshotGeometry = {
+                        x: parseInt(nodePropsObj['geometry_x']) || 0,
+                        y: parseInt(nodePropsObj['geometry_y']) || 0
+                    };
+                    break;
+                }
+            } catch(e) {}
+        }
+        if (!screenshotGeometry) {
+            screenshotGeometry = {x: 0, y: 0}; // Default fallback
+        }
+    }
+
     var scaleX = screenshotImg.naturalWidth / screenshotImg.width;
     var scaleY = screenshotImg.naturalHeight / screenshotImg.height;
+    console.log("Scale factors:", scaleX, scaleY);
 
-    var clickX = x * scaleX;
-    var clickY = y * scaleY;
+    var clickX = (x * scaleX) + screenshotGeometry.x;
+    var clickY = (y * scaleY) + screenshotGeometry.y;
+    console.log("Scaled and adjusted click coordinates:", clickX, clickY);
 
     var allNodes = document.querySelectorAll('.node');
     allNodes.forEach(function(node) {
@@ -626,6 +652,7 @@ function findElementsByCoordinates(x, y) {
                 if (clickX >= elemX && clickX <= elemX + elemWidth &&
                     clickY >= elemY && clickY <= elemY + elemHeight) {
                     matchingNodes.push(node);
+                    console.log("Found matching node:", node, propsObj);
                 }
             }
         } catch (e) {}
@@ -641,7 +668,6 @@ function findElementsByCoordinates(x, y) {
 
 // Initialize when DOM is loaded
 document.addEventListener("DOMContentLoaded", function() {
-    console.log("DOM content loaded");
     originalTreeHTML = document.getElementById('treeContainer').innerHTML;
 
     // Property Value Search
@@ -671,7 +697,6 @@ document.addEventListener("DOMContentLoaded", function() {
     var screenshotContainer = document.getElementById('screenshotContainer');
     if (screenshotContainer) {
         screenshotContainer.addEventListener('click', function(e) {
-            console.log("Screenshot container clicked");
             var screenshotImg = document.querySelector('.screenshot');
             if (!screenshotImg) return;
 
@@ -687,7 +712,6 @@ document.addEventListener("DOMContentLoaded", function() {
     var clearHighlightButton = document.getElementById('clearHighlight');
     if (clearHighlightButton) {
         clearHighlightButton.addEventListener('click', function() {
-            console.log("Clear highlight button clicked");
             var allNodes = document.querySelectorAll('.node');
             allNodes.forEach(function(node) {
                 node.classList.remove('highlight');
@@ -698,7 +722,6 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // Consolidated click handler
     document.addEventListener('click', function(e) {
-        console.log("Document clicked", e.target);
         // Node selection
         if (e.target.classList.contains("node")) {
             document.querySelectorAll(".node").forEach(n => n.classList.remove("selected"));
