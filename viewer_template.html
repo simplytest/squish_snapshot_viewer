@@ -55,7 +55,7 @@
     <div class="screenshot-panel">
       <div class="panel-header">
         <h3>Screenshot</h3>
-        <button id="clearHighlight" class="clear-btn" style="display: none;">Clear Highlight</button>
+        <button id="clearHighlight" style="display: none;">Clear Highlight</button>
       </div>
       <div class="screenshot-container" id="screenshotContainer">
         {SCREENSHOT_IMG}
@@ -73,10 +73,10 @@
 </div>
 <!-- Context Menus -->
 <div id="treeContextMenu" class="context-menu">
-  <div class="context-menu-item" data-type="realname">Copy realname</div>
-  <div class="context-menu-item" data-type="copy-as-object">Copy as object</div>
-  <div class="context-menu-item" data-type="class">Copy class</div>
-  <div class="context-menu-item" data-type="objectName">Copy objectName</div>
+  <div class="context-menu-item" data-type="realname">Copy real name</div>
+  <div class="context-menu-item" data-type="copy-as-object">Copy as BasePage object</div>
+  <div class="context-menu-item" data-type="class">Copy class name</div>
+  <div class="context-menu-item" data-type="objectName">Copy object name</div>
 </div>
 
 <div id="propsContextMenu" class="context-menu">
@@ -84,6 +84,7 @@
   <div class="context-menu-item" data-type="propName">Copy property name</div>
 </div>
 
+<script>var attributeWhitelist = {WHITELIST};</script>
 <script src="viewer_scripts.js"></script>
 
 <!-- Hidden XML data for copying -->

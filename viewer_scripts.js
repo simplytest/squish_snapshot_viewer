@@ -357,7 +357,13 @@ function filterTree(nodesToDisplay = null) {
     var treeContainer = document.getElementById('treeContainer');
     var showOnlyMatchesChecked = document.getElementById('showOnlyMatches').checked;
 
-    // First, ensure all nodes are visible to reset the state
+    // First, remove all highlighting
+    var allSpans = treeContainer.querySelectorAll('.node');
+    allSpans.forEach(function(span) {
+        span.style.backgroundColor = '';
+    });
+
+    // Reset all nodes to visible initially
     var allNodes = treeContainer.querySelectorAll('li');
     allNodes.forEach(function(node) {
         node.style.display = '';
@@ -367,80 +373,54 @@ function filterTree(nodesToDisplay = null) {
         ul.style.display = '';
     });
 
+    // Determine the set of nodes to consider for display
+    var nodesToProcess = [];
     if (nodesToDisplay && nodesToDisplay.length > 0) {
-        // Filtering based on provided nodes (e.g., from screenshot click)
-        if (showOnlyMatchesChecked) {
-            // Hide all nodes first if showOnlyMatches is checked
-            allNodes.forEach(function(node) {
-                node.style.display = 'none';
-            });
-        }
-
-        nodesToDisplay.forEach(function(nodeSpan) {
-            // Show this node and all its parents
-            var current = nodeSpan.closest('li');
-            while (current) {
-                current.style.display = '';
-                var parentUl = current.parentElement;
-                if (parentUl && parentUl.tagName === 'UL') {
-                    parentUl.style.display = '';
-                    var parentLi = parentUl.parentElement;
-                    if (parentLi && parentLi.tagName === 'LI') {
-                        parentLi.style.display = '';
-                        current = parentLi;
-                    } else {
-                        break;
-                    }
-                } else {
-                    break;
-                }
-            }
-        });
+        // If specific nodes are provided (e.g., from screenshot click)
+        nodesToProcess = nodesToDisplay;
     } else if (searchTerm !== '') {
-        // Filtering based on text search
-        if (showOnlyMatchesChecked) {
-            // Hide all nodes first if showOnlyMatches is checked
-            allNodes.forEach(function(node) {
-                node.style.display = 'none';
-            });
-        } else {
-            // If not checked, ensure all nodes are visible before filtering
-            // This block is technically redundant due to the initial reset, but kept for clarity if logic changes.
-            var allNodes = treeContainer.querySelectorAll('li');
-            allNodes.forEach(function(node) {
-                node.style.display = '';
-            });
-            var allUls = treeContainer.querySelectorAll('ul');
-            allUls.forEach(function(ul) {
-                ul.style.display = '';
-            });
-        }
-
+        // If text search term is present
         var nodeSpans = treeContainer.querySelectorAll('.node');
         nodeSpans.forEach(function(span) {
             if (span.textContent.toLowerCase().includes(searchTerm)) {
-                // Show this node and all its parents
-                var current = span.closest('li');
-                while (current) {
-                    current.style.display = '';
-                    var parentUl = current.parentElement;
-                    if (parentUl && parentUl.tagName === 'UL') {
-                        parentUl.style.display = '';
-                        var parentLi = parentUl.parentElement;
-                        if (parentLi && parentLi.tagName === 'LI') {
-                            parentLi.style.display = '';
-                            current = parentLi;
-                        } else {
-                            break;
-                        }
-                    } else {
-                        break;
-                    }
-                }
+                nodesToProcess.push(span);
             }
         });
+    } else {
+        // No specific nodes and no search term, so all nodes should remain visible (already reset above)
+        return; 
     }
-    // If both nodesToDisplay and searchTerm are empty, all nodes are already visible from the reset at the beginning.
+
+    // Apply filtering based on showOnlyMatchesChecked
+    if (showOnlyMatchesChecked && (nodesToProcess.length > 0 || searchTerm !== '')) {
+        // If showOnlyMatches is checked and there are nodes to process or a search term,
+        // hide all nodes first, then show only the matching ones and their parents.
+        allNodes.forEach(function(node) {
+            node.style.display = 'none';
+        });
+    }
+
+    // Show the nodes that match the criteria and their parents
+    nodesToProcess.forEach(function(nodeSpan) {
+        nodeSpan.style.backgroundColor = 'yellow'; // Highlight the node
+        var current = nodeSpan.closest('li');
+        while (current) {
+            current.style.display = '';
+            var parentUl = current.parentElement;
+            if (parentUl && parentUl.tagName === 'UL') {
+                parentUl.style.display = '';
+                var parentLi = parentUl.parentElement;
+                if (parentLi && parentLi.tagName === 'LI') {
+                    parentLi.style.display = '';
+                    current = parentLi;
+                } else {
+                    break;
+                }
+            } else {
+                break;
+            }
+        }
+    });
 }
 
 function toggleClearButton(inputId, buttonId) {
@@ -503,14 +483,18 @@ function copyToClipboard(type) {
                 var simplifiedType = propsObj['simplifiedType'] || '';
                 
                 var extraProps = {};
-                if (propsObj['id'] && propsObj['id'] !== '') {
-                    extraProps['id'] = propsObj['id'];
+                var realnameAttrs = {};
+                // Parse realname and merge attributes
+                if (propsObj['realname']) {
+                    realnameAttrs = parseRealnameAttributes(propsObj['realname'], attributeWhitelist);
+                    extraProps = Object.assign(extraProps, realnameAttrs);
                 }
-                if (propsObj['source'] && propsObj['source'] !== '') {
-                    extraProps['source'] = propsObj['source'];
-                }
-                if (propsObj['iconSource'] && propsObj['iconSource'] !== '') {
-                    extraProps['iconSource'] = propsObj['iconSource'];
+
+                // Add whitelisted properties from propsObj if not already in realname
+                for (var key in propsObj) {
+                    if (attributeWhitelist.includes(key) && propsObj[key] !== '' && !realnameAttrs.hasOwnProperty(key)) {
+                        extraProps[key] = propsObj[key];
+                    }
                 }
 
                 var extraPropsString = Object.entries(extraProps).map(([key, value]) => `"${key}": "${value}"`).join(', ');
@@ -633,6 +617,19 @@ function escapeHtml(unsafe) {
          .replace(/>/g, "&gt;")
          .replace(/"/g, "&quot;")
          .replace(/'/g, "&#039;");
+}
+
+// Helper function to parse attributes from realname string
+function parseRealnameAttributes(realnameString, whitelist) {
+    var attributes = {};
+    whitelist.forEach(function(key) {
+        var regex = new RegExp(key + "='([^']*)'");
+        var match = realnameString.match(regex);
+        if (match) {
+            attributes[key] = match[1];
+        }
+    });
+    return attributes;
 }
 
 function findElementsByCoordinates(x, y) {

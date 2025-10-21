@@ -121,6 +121,14 @@ def load_asset(file_name):
     except FileNotFoundError:
         raise FileNotFoundError(f"Asset file not found: {file_path}")
 
+def load_whitelist(file_name='whitelist.txt'):
+    """Load whitelist from a file."""
+    try:
+        with open(file_name, 'r', encoding='utf-8') as f:
+            return [line.strip() for line in f if line.strip()]
+    except FileNotFoundError:
+        return []
+
 def generate_html_from_xml(xml_path):
     """Generate HTML viewer content from an XML file"""
     xml_root = parse_object_xml(xml_path)
@@ -155,6 +163,9 @@ def generate_html_from_xml(xml_path):
         js_content = load_asset('viewer_scripts.js')
     except FileNotFoundError as e:
         return f"<h1>Error: {e}</h1>"
+
+    whitelist = load_whitelist()
+    html_template = html_template.replace('{WHITELIST}', json.dumps(whitelist))
 
     html_template = html_template.replace('<link rel="stylesheet" href="viewer_styles.css">', f'<style>{css_content}</style>')
     html_template = html_template.replace('<script src="viewer_scripts.js"></script>', f'<script>{js_content}</script>')
@@ -206,10 +217,25 @@ def main():
     def exit_app():
         window.destroy()
 
+    def show_about_window():
+        class Api:
+            def close_window(self):
+                about_window.destroy()
+
+        try:
+            about_html = load_asset('about.html')
+            api = Api()
+            about_window = webview.create_window('About', html=about_html, width=400, height=400, frameless=True, js_api=api)
+        except FileNotFoundError as e:
+            webview.create_window('Error', html=f'<h1>{e}</h1>', width=400, height=200)
+
     menu_items = [
         Menu('File', [
             MenuAction('Open', open_file),
             MenuAction('Exit', exit_app)
+        ]),
+        Menu('Help', [
+            MenuAction('About', show_about_window)
         ])
     ]
 
