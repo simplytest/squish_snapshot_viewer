@@ -1,5 +1,1 @@
-# Core dependency for creating the webview application
-pywebview>=4.0.0
-
-# Optional: For creating a standalone executable
-# pyinstaller>=5.0.0
+# This project has no external dependencies.
