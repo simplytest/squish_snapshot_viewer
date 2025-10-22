@@ -645,7 +645,7 @@ function findElementsByCoordinates(x, y) {
                 var nodeTextarea = document.createElement('textarea');
                 nodeTextarea.innerHTML = nodeProps;
                 var nodeDecoded = nodeTextarea.value;
-                var nodePropsObj = eval("(" + nodeDecoded + ")");
+                var nodePropsObj = JSON.parse(nodeDecoded);
                 if (nodePropsObj['geometry_x'] !== undefined) {
                     screenshotGeometry = {
                         x: parseInt(nodePropsObj['geometry_x']) || 0,
@@ -677,7 +677,7 @@ function findElementsByCoordinates(x, y) {
         try {
             var textarea = document.createElement('textarea');
             textarea.innerHTML = props;
-            var propsObj = eval('(' + textarea.value + ')');
+            var propsObj = JSON.parse(textarea.value);
 
             var elemX = parseInt(propsObj['geometry_x']);
             var elemY = parseInt(propsObj['geometry_y']);
@@ -687,15 +687,23 @@ function findElementsByCoordinates(x, y) {
             if (!isNaN(elemX) && !isNaN(elemY) && !isNaN(elemWidth) && !isNaN(elemHeight)) {
                 if (clickX >= elemX && clickX <= elemX + elemWidth &&
                     clickY >= elemY && clickY <= elemY + elemHeight) {
-                    matchingNodes.push(node);
+                    matchingNodes.push({node: node, width: elemWidth, height: elemHeight});
                 }
             }
         } catch (e) {}
     });
 
     if (matchingNodes.length > 0) {
-        matchingNodes.forEach(function(node) {
-            node.classList.add('highlight');
+        // Find the node with the smallest area
+        var smallestNode = matchingNodes.reduce(function(prev, curr) {
+            var prevArea = prev.width * prev.height;
+            var currArea = curr.width * curr.height;
+            return (prevArea < currArea) ? prev : curr;
+        });
+
+        // Also highlight all matching nodes in the tree
+        matchingNodes.forEach(function(match) {
+            match.node.classList.add('highlight');
         });
         document.getElementById('clearHighlight').style.display = 'block';
         filterTree(matchingNodes); // Call filterTree with the matching nodes
