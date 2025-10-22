@@ -121,6 +121,14 @@ def load_asset(file_name):
     except FileNotFoundError:
         raise FileNotFoundError(f"Asset file not found: {file_path}")
 
+def load_whitelist(file_name='whitelist.txt'):
+    """Load whitelist from a file."""
+    try:
+        with open(file_name, 'r', encoding='utf-8') as f:
+            return [line.strip() for line in f if line.strip()]
+    except FileNotFoundError:
+        return []
+
 def generate_html_from_xml(xml_path):
     """Generate HTML viewer content from an XML file"""
     xml_root = parse_object_xml(xml_path)
@@ -156,6 +164,9 @@ def generate_html_from_xml(xml_path):
     except FileNotFoundError as e:
         return f"<h1>Error: {e}</h1>"
 
+    whitelist = load_whitelist()
+    html_template = html_template.replace('{WHITELIST}', json.dumps(whitelist))
+
     html_template = html_template.replace('<link rel="stylesheet" href="viewer_styles.css">', f'<style>{css_content}</style>')
     html_template = html_template.replace('<script src="viewer_scripts.js"></script>', f'<script>{js_content}</script>')
 
@@ -167,6 +178,14 @@ def generate_html_from_xml(xml_path):
 
     return html
 
+class AboutApi:
+    def __init__(self):
+        self.window = None
+
+    def close_window(self):
+        if self.window:
+            self.window.hide()
+
 def main():
     LAST_FILE_CONFIG = '.last_opened_file'
     
@@ -176,6 +195,16 @@ def main():
         width=1200,
         height=800
     )
+
+    about_api = AboutApi()
+    about_html = load_asset('about.html')
+    about_window = webview.create_window('About', html=about_html, width=400, height=400, frameless=True, hidden=True, js_api=about_api)
+    about_api.window = about_window
+
+    def on_main_window_closed():
+        about_window.destroy()
+
+    window.events.closed += on_main_window_closed
 
     def load_initial_file():
         initial_html = "<h1>Squish Snapshot Viewer</h1><p>Use the File > Open menu to select an XML file to view.</p>"
@@ -206,10 +235,16 @@ def main():
     def exit_app():
         window.destroy()
 
+    def show_about_window():
+        about_window.show()
+
     menu_items = [
         Menu('File', [
             MenuAction('Open', open_file),
             MenuAction('Exit', exit_app)
+        ]),
+        Menu('Help', [
+            MenuAction('About', show_about_window)
         ])
     ]
 
