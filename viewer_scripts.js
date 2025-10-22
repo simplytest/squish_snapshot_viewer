@@ -706,10 +706,7 @@ function findElementsByCoordinates(x, y) {
             match.node.classList.add('highlight');
         });
         document.getElementById('clearHighlight').style.display = 'block';
-        filterTree(matchingNodes.map(m => m.node)); 
-
-        // Simulate a click on the smallest node to select it and trigger the overlay
-        smallestNode.node.click();
+        filterTree(matchingNodes); // Call filterTree with the matching nodes
     } else {
         filterTree([]); // If no nodes match, ensure the tree is reset (all visible if checkbox is off)
     }
