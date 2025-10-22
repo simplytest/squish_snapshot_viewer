@@ -190,7 +190,7 @@ def select_xml_file(path):
     xml_files = [f for f in os.listdir(path) if f.endswith('.xml')]
     if not xml_files:
         print(f"{COLOR_RED}No XML files found in '{path}'{COLOR_RESET}")
-        return None # Indicate no file found, but don't exit program
+        return "EXIT_PROGRAM" # Indicate no file found, but don't exit program
 
     if len(xml_files) == 1:
         print(f"{COLOR_BLUE}Automatically selecting the only XML file: {xml_files[0]}{COLOR_RESET}")
