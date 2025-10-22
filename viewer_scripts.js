@@ -701,6 +701,15 @@ function findElementsByCoordinates(x, y) {
             return (prevArea < currArea) ? prev : curr;
         });
 
+        // Select the smallest node and update overlay
+        document.querySelectorAll(".node").forEach(n => n.classList.remove("selected"));
+        smallestNode.node.classList.add("selected");
+        currentSelectedNode = smallestNode.node;
+        var props = currentSelectedNode.getAttribute("data-props") || "{}";
+        currentPropsData = props;
+        filterAndDisplayProperties();
+        updateElementOverlay(); // Explicitly redraw the overlay for the newly selected node
+
         // Also highlight all matching nodes in the tree
         matchingNodes.forEach(function(match) {
             match.node.classList.add('highlight');
