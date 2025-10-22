@@ -352,53 +352,75 @@ function filterAndDisplayProperties() {
     document.getElementById("props").innerHTML = html;
 }
 
-function filterTree() {
+function filterTree(nodesToDisplay = null) {
     var searchTerm = document.getElementById('treeSearch').value.toLowerCase();
     var treeContainer = document.getElementById('treeContainer');
-    
-    if (searchTerm === '') {
-        // Show all nodes
-        var allNodes = treeContainer.querySelectorAll('li');
-        allNodes.forEach(function(node) {
-            node.style.display = '';
-        });
-        var allUls = treeContainer.querySelectorAll('ul');
-        allUls.forEach(function(ul) {
-            ul.style.display = '';
-        });
-    } else {
-        // Hide all nodes first
-        var allNodes = treeContainer.querySelectorAll('li');
-        allNodes.forEach(function(node) {
-            node.style.display = 'none';
-        });
-        
-        // Show matching nodes and their parents
+    var showOnlyMatchesChecked = document.getElementById('showOnlyMatches').checked;
+
+    // First, remove all highlighting
+    var allSpans = treeContainer.querySelectorAll('.node');
+    allSpans.forEach(function(span) {
+        span.style.backgroundColor = '';
+    });
+
+    // Reset all nodes to visible initially
+    var allNodes = treeContainer.querySelectorAll('li');
+    allNodes.forEach(function(node) {
+        node.style.display = '';
+    });
+    var allUls = treeContainer.querySelectorAll('ul');
+    allUls.forEach(function(ul) {
+        ul.style.display = '';
+    });
+
+    // Determine the set of nodes to consider for display
+    var nodesToProcess = [];
+    if (nodesToDisplay && nodesToDisplay.length > 0) {
+        // If specific nodes are provided (e.g., from screenshot click)
+        nodesToProcess = nodesToDisplay;
+    } else if (searchTerm !== '') {
+        // If text search term is present
         var nodeSpans = treeContainer.querySelectorAll('.node');
         nodeSpans.forEach(function(span) {
             if (span.textContent.toLowerCase().includes(searchTerm)) {
-                // Show this node and all its parents
-                var current = span.closest('li');
-                while (current) {
-                    current.style.display = '';
-                    // Show parent ul and li
-                    var parentUl = current.parentElement;
-                    if (parentUl && parentUl.tagName === 'UL') {
-                        parentUl.style.display = '';
-                        var parentLi = parentUl.parentElement;
-                        if (parentLi && parentLi.tagName === 'LI') {
-                            parentLi.style.display = '';
-                            current = parentLi;
-                        } else {
-                            break;
-                        }
-                    } else {
-                        break;
-                    }
-                }
+                nodesToProcess.push(span);
             }
         });
+    } else {
+        // No specific nodes and no search term, so all nodes should remain visible (already reset above)
+        return; 
     }
+
+    // Apply filtering based on showOnlyMatchesChecked
+    if (showOnlyMatchesChecked && (nodesToProcess.length > 0 || searchTerm !== '')) {
+        // If showOnlyMatches is checked and there are nodes to process or a search term,
+        // hide all nodes first, then show only the matching ones and their parents.
+        allNodes.forEach(function(node) {
+            node.style.display = 'none';
+        });
+    }
+
+    // Show the nodes that match the criteria and their parents
+    nodesToProcess.forEach(function(nodeSpan) {
+        nodeSpan.style.backgroundColor = 'yellow'; // Highlight the node
+        var current = nodeSpan.closest('li');
+        while (current) {
+            current.style.display = '';
+            var parentUl = current.parentElement;
+            if (parentUl && parentUl.tagName === 'UL') {
+                parentUl.style.display = '';
+                var parentLi = parentUl.parentElement;
+                if (parentLi && parentLi.tagName === 'LI') {
+                    parentLi.style.display = '';
+                    current = parentLi;
+                } else {
+                    break;
+                }
+            } else {
+                break;
+            }
+        }
+    });
 }
 
 function toggleClearButton(inputId, buttonId) {
@@ -461,14 +483,18 @@ function copyToClipboard(type) {
                 var simplifiedType = propsObj['simplifiedType'] || '';
                 
                 var extraProps = {};
-                if (propsObj['id'] && propsObj['id'] !== '') {
-                    extraProps['id'] = propsObj['id'];
+                var realnameAttrs = {};
+                // Parse realname and merge attributes
+                if (propsObj['realname']) {
+                    realnameAttrs = parseRealnameAttributes(propsObj['realname'], attributeWhitelist);
+                    extraProps = Object.assign(extraProps, realnameAttrs);
                 }
-                if (propsObj['source'] && propsObj['source'] !== '') {
-                    extraProps['source'] = propsObj['source'];
-                }
-                if (propsObj['iconSource'] && propsObj['iconSource'] !== '') {
-                    extraProps['iconSource'] = propsObj['iconSource'];
+
+                // Add whitelisted properties from propsObj if not already in realname
+                for (var key in propsObj) {
+                    if (attributeWhitelist.includes(key) && propsObj[key] !== '' && !realnameAttrs.hasOwnProperty(key)) {
+                        extraProps[key] = propsObj[key];
+                    }
                 }
 
                 var extraPropsString = Object.entries(extraProps).map(([key, value]) => `"${key}": "${value}"`).join(', ');
@@ -593,6 +619,19 @@ function escapeHtml(unsafe) {
          .replace(/'/g, "&#039;");
 }
 
+// Helper function to parse attributes from realname string
+function parseRealnameAttributes(realnameString, whitelist) {
+    var attributes = {};
+    whitelist.forEach(function(key) {
+        var regex = new RegExp(key + "='([^']*)'");
+        var match = realnameString.match(regex);
+        if (match) {
+            attributes[key] = match[1];
+        }
+    });
+    return attributes;
+}
+
 function findElementsByCoordinates(x, y) {
     var screenshotImg = document.querySelector('.screenshot');
     if (!screenshotImg) return;
@@ -606,7 +645,7 @@ function findElementsByCoordinates(x, y) {
                 var nodeTextarea = document.createElement('textarea');
                 nodeTextarea.innerHTML = nodeProps;
                 var nodeDecoded = nodeTextarea.value;
-                var nodePropsObj = eval("(" + nodeDecoded + ")");
+                var nodePropsObj = JSON.parse(nodeDecoded);
                 if (nodePropsObj['geometry_x'] !== undefined) {
                     screenshotGeometry = {
                         x: parseInt(nodePropsObj['geometry_x']) || 0,
@@ -638,7 +677,7 @@ function findElementsByCoordinates(x, y) {
         try {
             var textarea = document.createElement('textarea');
             textarea.innerHTML = props;
-            var propsObj = eval('(' + textarea.value + ')');
+            var propsObj = JSON.parse(textarea.value);
 
             var elemX = parseInt(propsObj['geometry_x']);
             var elemY = parseInt(propsObj['geometry_y']);
@@ -648,17 +687,31 @@ function findElementsByCoordinates(x, y) {
             if (!isNaN(elemX) && !isNaN(elemY) && !isNaN(elemWidth) && !isNaN(elemHeight)) {
                 if (clickX >= elemX && clickX <= elemX + elemWidth &&
                     clickY >= elemY && clickY <= elemY + elemHeight) {
-                    matchingNodes.push(node);
+                    matchingNodes.push({node: node, width: elemWidth, height: elemHeight});
                 }
             }
         } catch (e) {}
     });
 
     if (matchingNodes.length > 0) {
-        matchingNodes.forEach(function(node) {
-            node.classList.add('highlight');
+        // Find the node with the smallest area
+        var smallestNode = matchingNodes.reduce(function(prev, curr) {
+            var prevArea = prev.width * prev.height;
+            var currArea = curr.width * curr.height;
+            return (prevArea < currArea) ? prev : curr;
+        });
+
+        // Also highlight all matching nodes in the tree
+        matchingNodes.forEach(function(match) {
+            match.node.classList.add('highlight');
         });
         document.getElementById('clearHighlight').style.display = 'block';
+        filterTree(matchingNodes.map(m => m.node)); 
+
+        // Simulate a click on the smallest node to select it and trigger the overlay
+        smallestNode.node.click();
+    } else {
+        filterTree([]); // If no nodes match, ensure the tree is reset (all visible if checkbox is off)
     }
 }
 
@@ -688,6 +741,14 @@ document.addEventListener("DOMContentLoaded", function() {
         filterAndDisplayProperties();
         toggleClearButton('propsSearch', 'clearPropsSearch');
     });
+
+    // Add event listener for showOnlyMatches checkbox
+    var showOnlyMatchesCheckbox = document.getElementById('showOnlyMatches');
+    if (showOnlyMatchesCheckbox) {
+        showOnlyMatchesCheckbox.addEventListener('change', function() {
+            filterTree();
+        });
+    }
 
     // Screenshot click handler
     var screenshotContainer = document.getElementById('screenshotContainer');
