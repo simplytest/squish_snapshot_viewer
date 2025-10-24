@@ -353,9 +353,11 @@ function filterAndDisplayProperties() {
 }
 
 function filterTree(nodesToDisplay = null) {
+    console.log("filterTree called with nodesToDisplay:", nodesToDisplay);
     var searchTerm = document.getElementById('treeSearch').value.toLowerCase();
     var treeContainer = document.getElementById('treeContainer');
     var showOnlyMatchesChecked = document.getElementById('showOnlyMatches').checked;
+    console.log("showOnlyMatchesChecked:", showOnlyMatchesChecked);
 
     // First, remove all highlighting
     var allSpans = treeContainer.querySelectorAll('.node');
@@ -365,6 +367,7 @@ function filterTree(nodesToDisplay = null) {
 
     // Reset all nodes to visible initially
     var allNodes = treeContainer.querySelectorAll('li');
+    console.log("Total li nodes:", allNodes.length);
     allNodes.forEach(function(node) {
         node.style.display = '';
     });
@@ -388,11 +391,14 @@ function filterTree(nodesToDisplay = null) {
         });
     } else {
         // No specific nodes and no search term, so all nodes should remain visible (already reset above)
-        return; 
+        console.log("No nodes to process, returning.");
+        return;
     }
+    console.log("nodesToProcess:", nodesToProcess);
 
     // Apply filtering based on showOnlyMatchesChecked
     if (showOnlyMatchesChecked && (nodesToProcess.length > 0 || searchTerm !== '')) {
+        console.log("showOnlyMatchesChecked is true, hiding all nodes.");
         // If showOnlyMatches is checked and there are nodes to process or a search term,
         // hide all nodes first, then show only the matching ones and their parents.
         allNodes.forEach(function(node) {
@@ -720,8 +726,7 @@ function findElementsByCoordinates(x, y) {
         matchingNodes.forEach(function(match) {
             match.node.classList.add('highlight');
         });
-        document.getElementById('clearHighlight').style.display = 'block';
-        filterTree(matchingNodes); // Call filterTree with the matching nodes
+        filterTree(matchingNodes.map(m => m.node)); // Call filterTree with the matching nodes
     } else {
         filterTree([]); // If no nodes match, ensure the tree is reset (all visible if checkbox is off)
     }
