@@ -451,6 +451,12 @@ function clearPropsSearch() {
 
 // Context menu functions
 function copyToClipboard(type) {
+    // Check if the clicked item is disabled
+    var contextMenuItem = event.target.closest('.context-menu-item');
+    if (contextMenuItem && contextMenuItem.classList.contains('disabled-menu-item')) {
+        return; // Do nothing if disabled
+    }
+
     var textToCopy = "";
     var what = "";
 
@@ -572,13 +578,13 @@ function showTreeContextMenu(e, node) {
         var braceCount = (realname.match(/{/g) || []).length;
 
         if (braceCount <= 1 || (braceCount === 2 && realname.includes("type='QuickView'"))) {
-            copyAsObjectItem.style.display = 'block';
+            copyAsObjectItem.classList.remove('disabled-menu-item');
         } else {
-            copyAsObjectItem.style.display = 'none';
+            copyAsObjectItem.classList.add('disabled-menu-item');
         }
     } catch(e) {
         var copyAsObjectItem = document.querySelector('[data-type="copy-as-object"]');
-        copyAsObjectItem.style.display = 'none';
+        copyAsObjectItem.classList.add('disabled-menu-item');
     }
 
     var menu = document.getElementById('treeContextMenu');

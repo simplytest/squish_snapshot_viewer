@@ -30,3 +30,6 @@ squishsnapshot_viewer.html
 
 # Logs
 *.log
+*shot.xml
+.last_folder
+.gitignore

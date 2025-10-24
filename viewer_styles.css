@@ -383,3 +383,13 @@ mark {
 #clearHighlight:hover {
     background-color: #e0e0e0;
 }
+
+.context-menu-item.disabled-menu-item {
+    color: #aaa;
+    cursor: not-allowed;
+    background-color: #f0f0f0;
+}
+
+.context-menu-item.disabled-menu-item:hover {
+    background: #f0f0f0; /* Override hover effect */
+}
