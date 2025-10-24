@@ -107,44 +107,101 @@ function formatPropertiesAsTable(propsStr, searchTerm, highlightTerms) {
         
         searchTerm = searchTerm || "";
         
-        var allProps = [];
+        // Group properties hierarchically
+        var groups = {};
+        var standalone = {};
+        
         for (var key in props) {
             if (props.hasOwnProperty(key)) {
-                allProps.push({key: key, value: props[key]});
+                var parts = key.split('_');
+                if (parts.length > 1) {
+                    var groupName = parts[0];
+                    var propName = parts.slice(1).join('_');
+                    if (!groups[groupName]) groups[groupName] = {};
+                    groups[groupName][propName] = props[key];
+                } else if (key === 'superclasses') {
+                    // Split superclasses into individual items
+                    if (!groups['superclasses']) groups['superclasses'] = {};
+                    var classes = props[key].split(' > ');
+                    for (var i = 0; i < classes.length; i++) {
+                        groups['superclasses']['level_' + i] = classes[i];
+                    }
+                } else {
+                    standalone[key] = props[key];
+                }
             }
         }
-
+        
         var sortColumn = document.getElementById('sortColumn').value;
         var sortDirection = document.getElementById('sortOrder').value;
-
-        // Sorting
-        if (sortDirection !== 'none') {
-            allProps.sort(function(a, b) {
-                var valA = (sortColumn === 'Property' ? a.key : (a.value || "").toString()).toLowerCase();
-                var valB = (sortColumn === 'Property' ? b.key : (b.value || "").toString()).toLowerCase();
-                if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
-                if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
-                return 0;
-            });
+        
+        // Sort function
+        function sortKeys(obj) {
+            var keys = Object.keys(obj);
+            if (sortDirection === 'asc') {
+                keys.sort();
+            } else if (sortDirection === 'desc') {
+                keys.sort().reverse();
+            }
+            // 'none' = no sorting, keep original order
+            return keys;
         }
-
+        
         var table = "<table class='props-table'>";
         table += "<thead><tr>";
         table += "<th class='" + (sortColumn === 'Property' && sortDirection !== 'none' ? 'sort-' + sortDirection : '') + "'>Property</th>";
         table += "<th class='" + (sortColumn === 'Value' && sortDirection !== 'none' ? 'sort-' + sortDirection : '') + "'>Value</th>";
         table += "</tr></thead><tbody>";
         
-        for (var i = 0; i < allProps.length; i++) {
-            var key = allProps[i].key;
-            var value = allProps[i].value;
+        // Filter and add standalone properties first (sorted)
+        var standaloneKeys = sortKeys(standalone);
+        for (var i = 0; i < standaloneKeys.length; i++) {
+            var key = standaloneKeys[i];
+            var value = standalone[key];
             if (value === null || value === undefined) value = "";
             
+            // Apply search filter
             if (searchTerm === "" || 
                 key.toLowerCase().includes(searchTerm) || 
                 value.toString().toLowerCase().includes(searchTerm)) {
                 var highlightedKey = highlightText(key, highlightTerms);
                 var highlightedValue = highlightText(value, highlightTerms);
                 table += "<tr><td>" + highlightedKey + "</td><td>" + highlightedValue + "</td></tr>";
+            }
+        }
+        
+        // Filter and add grouped properties with hierarchy (sorted groups)
+        var groupKeys = sortKeys(groups);
+        for (var i = 0; i < groupKeys.length; i++) {
+            var groupName = groupKeys[i];
+            var groupHasMatches = false;
+            var groupContent = "";
+            
+            // Sort properties within each group and check for matches
+            var groupPropKeys = sortKeys(groups[groupName]);
+            for (var j = 0; j < groupPropKeys.length; j++) {
+                var propName = groupPropKeys[j];
+                var value = groups[groupName][propName];
+                if (value === null || value === undefined) value = "";
+                var displayName = propName.replace('level_', 'inheritance_');
+                
+                // Apply search filter
+                if (searchTerm === "" || 
+                    groupName.toLowerCase().includes(searchTerm) ||
+                    displayName.toLowerCase().includes(searchTerm) || 
+                    value.toString().toLowerCase().includes(searchTerm)) {
+                    var highlightedDisplayName = highlightText(displayName, highlightTerms);
+                    var highlightedValue = highlightText(value, highlightTerms);
+                    groupContent += "<tr class='group-item group-" + groupName + "'><td>&nbsp;&nbsp;&nbsp;&nbsp;" + highlightedDisplayName + "</td><td>" + highlightedValue + "</td></tr>";
+                    groupHasMatches = true;
+                }
+            }
+            
+            // Only add group if it has matches
+            if (groupHasMatches) {
+                var highlightedGroupName = highlightText(groupName, highlightTerms);
+                table += "<tr class='group-header' data-group='" + groupName + "'><td colspan='2'><span class='toggle'>-</span><strong>" + highlightedGroupName + "</strong></td></tr>";
+                table += groupContent;
             }
         }
         
@@ -155,10 +212,25 @@ function formatPropertiesAsTable(propsStr, searchTerm, highlightTerms) {
             var tableRows = document.querySelectorAll('.props-table tr:not(.group-header)');
             tableRows.forEach(function(row) {
                 row.addEventListener('click', function() {
+                    // Remove selection from all rows
                     document.querySelectorAll('.props-table tr').forEach(function(r) {
                         r.classList.remove('selected');
                     });
+                    // Add selection to clicked row
                     this.classList.add('selected');
+                });
+            });
+
+            var groupHeaders = document.querySelectorAll('.props-table .group-header');
+            groupHeaders.forEach(function(header) {
+                header.addEventListener('click', function() {
+                    var groupName = this.dataset.group;
+                    var groupItems = document.querySelectorAll('.props-table .group-' + groupName);
+                    var toggle = this.querySelector('.toggle');
+                    groupItems.forEach(function(item) {
+                        item.style.display = item.style.display === 'none' ? '' : 'none';
+                    });
+                    toggle.textContent = toggle.textContent === '-' ? '+' : '-';
                 });
             });
         }, 10);
