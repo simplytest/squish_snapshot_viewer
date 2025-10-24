@@ -197,6 +197,7 @@ def generate_html_from_xml(xml_path):
     html = html.replace('{SCREENSHOT_IMG}', screenshot_img)
     html = html.replace('{SCREENSHOT_NAME}', f"Screenshot for {os.path.splitext(os.path.basename(xml_path))[0]}")
     html = html.replace('{RAW_XML}', escape(raw_xml))
+    html = html.replace('{XML_FILE_PATH}', os.path.abspath(xml_path))
 
     return html
 

@@ -118,14 +118,20 @@ body {
     border-bottom: 1px solid #eee; 
     background: #f9f9f9;
     display: flex; /* Use flexbox */
-    align-items: center; /* Vertically align items */
-    justify-content: space-between; /* Distribute space between items */
+    align-items: baseline; /* Vertically align items */
+    gap: 10px;
 }
 
 .panel-header h3 {
     margin: 0;
     font-size: 16px;
     color: #333;
+}
+
+#screenshot-path {
+    font-size: 12px;
+    margin: 0;
+    color: #666;
 }
 
 /* Tree View Styles */
