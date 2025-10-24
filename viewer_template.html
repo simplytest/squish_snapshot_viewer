@@ -30,10 +30,14 @@
     </div>
   </div>
   <div class="header-search-group">
-    <label>Sort:</label>
+    <label>Sort by:</label>
+    <select id="sortColumn" onchange="refreshProperties()" style="padding:4px;">
+      <option value="Property">Property</option>
+      <option value="Value">Value</option>
+    </select>
     <select id="sortOrder" onchange="refreshProperties()" style="padding:4px;">
-      <option value="desc">Descending</option>
       <option value="asc">Ascending</option>
+      <option value="desc">Descending</option>
       <option value="none">None</option>
     </select>
   </div>

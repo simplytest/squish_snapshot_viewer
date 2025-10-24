@@ -107,98 +107,44 @@ function formatPropertiesAsTable(propsStr, searchTerm, highlightTerms) {
         
         searchTerm = searchTerm || "";
         
-        // Group properties hierarchically
-        var groups = {};
-        var standalone = {};
-        
+        var allProps = [];
         for (var key in props) {
             if (props.hasOwnProperty(key)) {
-                var parts = key.split('_');
-                if (parts.length > 1) {
-                    var groupName = parts[0];
-                    var propName = parts.slice(1).join('_');
-                    if (!groups[groupName]) groups[groupName] = {};
-                    groups[groupName][propName] = props[key];
-                } else if (key === 'superclasses') {
-                    // Split superclasses into individual items
-                    if (!groups['superclasses']) groups['superclasses'] = {};
-                    var classes = props[key].split(' > ');
-                    for (var i = 0; i < classes.length; i++) {
-                        groups['superclasses']['level_' + i] = classes[i];
-                    }
-                } else {
-                    standalone[key] = props[key];
-                }
+                allProps.push({key: key, value: props[key]});
             }
         }
-        
-        // Get sort order from dropdown (default: descending)
-        var sortOrder = document.getElementById('sortOrder') ? document.getElementById('sortOrder').value : 'desc';
-        
-        // Sort function
-        function sortKeys(obj) {
-            var keys = Object.keys(obj);
-            if (sortOrder === 'asc') {
-                keys.sort();
-            } else if (sortOrder === 'desc') {
-                keys.sort().reverse();
-            }
-            // 'none' = no sorting, keep original order
-            return keys;
+
+        var sortColumn = document.getElementById('sortColumn').value;
+        var sortDirection = document.getElementById('sortOrder').value;
+
+        // Sorting
+        if (sortDirection !== 'none') {
+            allProps.sort(function(a, b) {
+                var valA = (sortColumn === 'Property' ? a.key : (a.value || "").toString()).toLowerCase();
+                var valB = (sortColumn === 'Property' ? b.key : (b.value || "").toString()).toLowerCase();
+                if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+                if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+                return 0;
+            });
         }
-        
+
         var table = "<table class='props-table'>";
-        table += "<thead><tr><th>Property</th><th>Value</th></tr></thead><tbody>";
+        table += "<thead><tr>";
+        table += "<th class='" + (sortColumn === 'Property' && sortDirection !== 'none' ? 'sort-' + sortDirection : '') + "'>Property</th>";
+        table += "<th class='" + (sortColumn === 'Value' && sortDirection !== 'none' ? 'sort-' + sortDirection : '') + "'>Value</th>";
+        table += "</tr></thead><tbody>";
         
-        // Filter and add standalone properties first (sorted)
-        var standaloneKeys = sortKeys(standalone);
-        for (var i = 0; i < standaloneKeys.length; i++) {
-            var key = standaloneKeys[i];
-            var value = standalone[key];
+        for (var i = 0; i < allProps.length; i++) {
+            var key = allProps[i].key;
+            var value = allProps[i].value;
             if (value === null || value === undefined) value = "";
             
-            // Apply search filter
             if (searchTerm === "" || 
                 key.toLowerCase().includes(searchTerm) || 
                 value.toString().toLowerCase().includes(searchTerm)) {
                 var highlightedKey = highlightText(key, highlightTerms);
                 var highlightedValue = highlightText(value, highlightTerms);
                 table += "<tr><td>" + highlightedKey + "</td><td>" + highlightedValue + "</td></tr>";
-            }
-        }
-        
-        // Filter and add grouped properties with hierarchy (sorted groups)
-        var groupKeys = sortKeys(groups);
-        for (var i = 0; i < groupKeys.length; i++) {
-            var groupName = groupKeys[i];
-            var groupHasMatches = false;
-            var groupContent = "";
-            
-            // Sort properties within each group and check for matches
-            var groupPropKeys = sortKeys(groups[groupName]);
-            for (var j = 0; j < groupPropKeys.length; j++) {
-                var propName = groupPropKeys[j];
-                var value = groups[groupName][propName];
-                if (value === null || value === undefined) value = "";
-                var displayName = propName.replace('level_', 'inheritance_');
-                
-                // Apply search filter
-                if (searchTerm === "" || 
-                    groupName.toLowerCase().includes(searchTerm) ||
-                    displayName.toLowerCase().includes(searchTerm) || 
-                    value.toString().toLowerCase().includes(searchTerm)) {
-                    var highlightedDisplayName = highlightText(displayName, highlightTerms);
-                    var highlightedValue = highlightText(value, highlightTerms);
-                    groupContent += "<tr class='group-item'><td>&nbsp;&nbsp;&nbsp;&nbsp;" + highlightedDisplayName + "</td><td>" + highlightedValue + "</td></tr>";
-                    groupHasMatches = true;
-                }
-            }
-            
-            // Only add group if it has matches
-            if (groupHasMatches) {
-                var highlightedGroupName = highlightText(groupName, highlightTerms);
-                table += "<tr class='group-header'><td colspan='2'><strong>" + highlightedGroupName + "</strong></td></tr>";
-                table += groupContent;
             }
         }
         
@@ -209,11 +155,9 @@ function formatPropertiesAsTable(propsStr, searchTerm, highlightTerms) {
             var tableRows = document.querySelectorAll('.props-table tr:not(.group-header)');
             tableRows.forEach(function(row) {
                 row.addEventListener('click', function() {
-                    // Remove selection from all rows
                     document.querySelectorAll('.props-table tr').forEach(function(r) {
                         r.classList.remove('selected');
                     });
-                    // Add selection to clicked row
                     this.classList.add('selected');
                 });
             });
@@ -782,18 +726,6 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
-    // Clear Highlight button
-    var clearHighlightButton = document.getElementById('clearHighlight');
-    if (clearHighlightButton) {
-        clearHighlightButton.addEventListener('click', function() {
-            var allNodes = document.querySelectorAll('.node');
-            allNodes.forEach(function(node) {
-                node.classList.remove('highlight');
-            });
-            clearHighlightButton.style.display = 'none';
-        });
-    }
-
     // Consolidated click handler
     document.addEventListener('click', function(e) {
         // Node selection
@@ -842,6 +774,34 @@ document.addEventListener("DOMContentLoaded", function() {
                     showPropsContextMenu(e, propName, propValue);
                 }
             }
+        }
+    });
+
+    // Properties table header click for sorting
+    document.getElementById('props').addEventListener('click', function(e) {
+        var th = e.target.closest('th');
+        if (th) {
+            var columnIndex = th.cellIndex;
+            var newSortColumn = columnIndex === 0 ? 'Property' : 'Value';
+            var sortColumnDropdown = document.getElementById('sortColumn');
+            var sortOrderDropdown = document.getElementById('sortOrder');
+            
+            if (newSortColumn === sortColumnDropdown.value) {
+                // Cycle through directions
+                if (sortOrderDropdown.value === 'asc') {
+                    sortOrderDropdown.value = 'desc';
+                } else if (sortOrderDropdown.value === 'desc') {
+                    sortOrderDropdown.value = 'none';
+                } else {
+                    sortOrderDropdown.value = 'asc';
+                }
+            } else {
+                // New column clicked, set to asc
+                sortColumnDropdown.value = newSortColumn;
+                sortOrderDropdown.value = 'asc';
+            }
+            
+            refreshProperties();
         }
     });
 });
