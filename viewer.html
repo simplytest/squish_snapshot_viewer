@@ -1,0 +1,864 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Squish Snapshot Viewer</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+<style>
+:root {
+    --bs-font-sans-serif: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+body {
+    font-family: var(--bs-font-sans-serif);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: #f8f9fa;
+}
+.main-container {
+    flex: 1;
+    overflow-y: hidden;
+}
+.card-body-scrollable {
+    overflow-y: auto;
+}
+.screenshot-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem;
+    overflow: hidden;
+}
+.screenshot {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border: 1px solid #dee2e6;
+}
+.props-table {
+    font-size: 0.875rem;
+}
+.props-table th {
+    cursor: pointer;
+}
+.props-table th.sort-asc::after { content: ' \25B2'; }
+.props-table th.sort-desc::after { content: ' \25BC'; }
+.props-table tr { cursor: pointer; }
+.tree ul {
+    list-style-type: none;
+    padding-left: 20px;
+}
+.tree li { margin: 2px 0; }
+.node {
+    cursor: pointer;
+    padding: 2px 5px;
+    border-radius: 3px;
+    display: inline-block;
+}
+.node:hover { background-color: #e9ecef; }
+.node.selected { background-color: #cfe2ff; }
+.element-overlay {
+    position: absolute;
+    border: 3px solid red;
+    background: rgba(255, 0, 0, 0.1);
+    pointer-events: none;
+    z-index: 10;
+    animation: pulsate 1s infinite;
+}
+@keyframes pulsate {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+}
+.context-menu {
+    position: absolute;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 5px 0;
+    box-shadow: 2px 2px 10px rgba(0,0,0,0.3);
+    z-index: 1000;
+    display: none;
+}
+.context-menu-item { padding: 5px 15px; cursor: pointer; }
+.context-menu-item:hover { background: #f0f0f0; }
+.context-menu-item.disabled-menu-item {
+    color: #aaa;
+    cursor: not-allowed;
+    background-color: #f0f0f0;
+}
+.toggle {
+    cursor: pointer;
+    margin-right: 5px;
+    font-weight: bold;
+    display: inline-block;
+    width: 15px;
+    text-align: center;
+    user-select: none;
+}
+.nested.collapsed { display: none; }
+.node.highlight { background-color: #f0ad4e; }
+</style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark flex-shrink-0 shadow-sm">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="#">Squish Snapshot Viewer</a>
+        <div class="collapse navbar-collapse">
+            <form class="d-flex align-items-center gap-3">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text">Tree:</span>
+                    <input id="treeSearch" class="form-control" type="search" placeholder="Search...">
+                </div>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text">Props:</span>
+                    <input id="propsSearch" class="form-control" type="search" placeholder="Search...">
+                </div>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text">Values:</span>
+                    <input id="propertyValueSearch" class="form-control" type="search" placeholder="Search...">
+                </div>
+                <div class="input-group input-group-sm">
+                    <label class="input-group-text" for="sortColumn">Sort:</label>
+                    <select class="form-select" id="sortColumn" onchange="refreshProperties()">
+                        <option value="Property">Property</option>
+                        <option value="Value">Value</option>
+                    </select>
+                    <select class="form-select" id="sortOrder" onchange="refreshProperties()">
+                        <option value="asc">Asc</option>
+                        <option value="desc">Desc</option>
+                        <option value="none">None</option>
+                    </select>
+                </div>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" id="showOnlyMatches">
+                    <label class="form-check-label text-white" for="showOnlyMatches">Only Matches</label>
+                </div>
+            </form>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid main-container">
+    <div class="row h-100">
+        <div class="col-md-2 h-100 d-flex flex-column border-end p-0 bg-body-tertiary">
+            <div class="p-2 border-bottom">
+                <input type="file" id="folderInput" webkitdirectory style="display: none;" />
+                <button id="folderSelectBtn" class="btn btn-primary w-100">Select Folder</button>
+            </div>
+            <div id="fileList" class="list-group list-group-flush overflow-auto"></div>
+        </div>
+        <main class="col-md-10 h-100 d-flex flex-column p-2">
+            <div id="initial-message" class="flex-grow-1 d-flex justify-content-center align-items-center text-muted h1">Select a folder to see snapshot files.</div>
+            <div id="viewerContent" class="d-none flex-grow-1 h-100">
+                <div class="row h-100">
+                    <div class="col-md-4 h-100 d-flex flex-column">
+                        <div class="card h-100 d-flex flex-column shadow" style="min-height: 0;">
+                            <div class="card-header">Object Tree</div>
+                            <div id="treeContainer" class="card-body card-body-scrollable"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-8 h-100 d-flex flex-column">
+                        <div class="card mb-2 shadow">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <span>Squish Snapshot</span>
+                                <small id="screenshot-path" class="text-muted"></small>
+                            </div>
+                            <div id="screenshotContainer" class="card-body screenshot-container" style="min-height: 200px;"></div>
+                        </div>
+                        <div class="card flex-grow-1 d-flex flex-column shadow" style="min-height: 0;">
+                            <div class="card-header">Selected Node Properties</div>
+                            <div id="props" class="card-body card-body-scrollable">Click a node to see properties.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- Context Menus -->
+<div id="treeContextMenu" class="context-menu dropdown-menu">
+  <a class="context-menu-item dropdown-item" href="#" data-type="realname">Copy real name</a>
+  <a class="context-menu-item dropdown-item" href="#" data-type="copy-as-object">Copy as BasePage object</a>
+  <a class="context-menu-item dropdown-item" href="#" data-type="class">Copy class name</a>
+  <a class="context-menu-item dropdown-item" href="#" data-type="objectName">Copy object name</a>
+</div>
+<div id="propsContextMenu" class="context-menu dropdown-menu">
+  <a class="context-menu-item dropdown-item" href="#" data-type="propValue">Copy property value</a>
+  <a class="context-menu-item dropdown-item" href="#" data-type="propName">Copy property name</a>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+<script>
+let xmlFiles = [];
+var attributeWhitelist = ["name", "text", "title", "type", "unnamed", "visible", "windowTitle", "simplifiedType"];
+
+document.addEventListener("DOMContentLoaded", function() {
+    const folderSelectBtn = document.getElementById('folderSelectBtn');
+    const folderInput = document.getElementById('folderInput');
+    const fileList = document.getElementById('fileList');
+    const initialMessage = document.getElementById('initial-message');
+    const viewerContent = document.getElementById('viewerContent');
+
+    folderSelectBtn.addEventListener('click', () => folderInput.click());
+    folderInput.addEventListener('change', handleFolderSelection);
+
+    function handleFolderSelection(event) {
+        const files = event.target.files;
+        xmlFiles = Array.from(files).filter(file => file.name.endsWith('.xml')).sort((a, b) => a.name.localeCompare(b.name));
+        
+        fileList.innerHTML = '';
+        
+        if (xmlFiles.length > 0) {
+            initialMessage.classList.add('d-none');
+            viewerContent.classList.add('d-none');
+            xmlFiles.forEach((file, index) => {
+                const listItem = document.createElement('a');
+                listItem.href = "#";
+                listItem.textContent = file.name;
+                listItem.className = 'list-group-item list-group-item-action';
+                listItem.dataset.index = index;
+                listItem.addEventListener('click', handleFileClick);
+                fileList.appendChild(listItem);
+            });
+        } else {
+            initialMessage.textContent = 'No XML files found in the selected directory.';
+            initialMessage.classList.remove('d-none');
+            viewerContent.classList.add('d-none');
+        }
+    }
+
+    function handleFileClick(event) {
+        event.preventDefault();
+        document.querySelectorAll('.list-group-item').forEach(item => item.classList.remove('active'));
+        event.target.classList.add('active');
+
+        const fileIndex = event.target.dataset.index;
+        const file = xmlFiles[fileIndex];
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            generateViewerFromXML(e.target.result, file.name);
+        };
+        reader.readAsText(file);
+    }
+
+    function generateViewerFromXML(xmlString, fileName) {
+        try {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlString, "application/xml");
+
+            const parseError = xmlDoc.querySelector("parsererror");
+            if (parseError) {
+                console.error("Error parsing XML:", parseError);
+                alert("Error parsing XML file. Check console for details.");
+                return;
+            }
+            
+            const imageElem = xmlDoc.querySelector('image[type="PNG"]');
+            const screenshotContainer = document.getElementById('screenshotContainer');
+            if (imageElem && imageElem.textContent) {
+                screenshotContainer.innerHTML = `<img class='screenshot' src='data:image/png;base64,${imageElem.textContent.trim()}'>`;
+            } else {
+                screenshotContainer.innerHTML = "<p class='text-center text-muted m-0'><i>No screenshot found.</i></p>";
+            }
+
+            const treeContainer = document.getElementById('treeContainer');
+            const rootElement = xmlDoc.querySelector("element");
+            if (rootElement) {
+                treeContainer.innerHTML = `<ul class='tree'>${buildTreeHtmlJS(rootElement)}</ul>`;
+            } else {
+                treeContainer.innerHTML = "<p class='text-muted m-0'><i>No object structure found.</i></p>";
+            }
+
+            document.getElementById('screenshot-path').textContent = fileName;
+            document.title = `Squish Snapshot Viewer - ${fileName}`;
+            
+            initialMessage.classList.add('d-none');
+            viewerContent.classList.remove('d-none');
+
+            document.getElementById("props").innerHTML = 'Click a node in the tree to see its properties here.';
+            
+            resetViewerState();
+
+        } catch (e) {
+            console.error("Failed to generate viewer:", e);
+            alert("An error occurred while processing the file. Check console for details.");
+        }
+    }
+
+    function buildTreeHtmlJS(node) {
+        let properties = {};
+        for (const attr of node.attributes) { properties[attr.name] = attr.value; }
+
+        for (const child of node.children) {
+            if (child.children.length === 0 && child.textContent) {
+                 if (child.tagName === 'superclass') {
+                    let classes = Array.from(child.querySelectorAll("class")).map(c => c.textContent).filter(Boolean);
+                    if (classes.length > 0) properties["superclasses"] = classes.join(" > ");
+                } else {
+                    properties[child.tagName] = child.textContent.trim();
+                }
+            }
+        }
+        
+        const geomElem = node.querySelector("abstractProperties > geometry");
+        if (geomElem) {
+            for(const coord of ["x", "y", "width", "height"]) {
+                const coordElem = geomElem.querySelector(coord);
+                if (coordElem && coordElem.textContent) { properties[`geometry_${coord}`] = coordElem.textContent; }
+            }
+        }
+        
+        const visualElem = node.querySelector("abstractProperties > visual");
+        if (visualElem) {
+            for (const attr of visualElem.attributes) { properties[`visual_${attr.name}`] = attr.value; }
+        }
+
+        const propsElem = node.querySelector("properties");
+        if (propsElem) {
+            for (const prop of propsElem.querySelectorAll("property")) {
+                const propName = prop.getAttribute("name");
+                const stringElem = prop.querySelector("string");
+                if (propName) { properties[propName] = stringElem && stringElem.textContent ? stringElem.textContent : ""; }
+            }
+        }
+
+        let label = properties.objectName || properties.simplifiedType || node.tagName;
+
+        const dataProps = escapeHtml(JSON.stringify(properties));
+        const xmlSnippet = new XMLSerializer().serializeToString(node);
+        const dataXml = escapeHtml(xmlSnippet);
+
+        let html = `<li>`;
+        const children = Array.from(node.children).filter(c => c.tagName === 'children' || c.tagName === 'element');
+        let childElements = [];
+        if (children.length > 0 && children[0].tagName === 'children') {
+            childElements = Array.from(children[0].children).filter(c => c.tagName === 'element');
+        } else {
+            childElements = children.filter(c => c.tagName === 'element');
+        }
+
+        if (childElements.length > 0) {
+            html += `<span class="toggle">-</span><span class="node" data-props='${dataProps}' data-xml='${dataXml}'>${escapeHtml(label)}</span>`;
+            html += `<ul class="nested">`;
+            childElements.forEach(child => { html += buildTreeHtmlJS(child); });
+            html += `</ul>`;
+        } else {
+            html += `<span class="node" data-props='${dataProps}' data-xml='${dataXml}'>${escapeHtml(label)}</span>`;
+        }
+
+        html += `</li>`;
+        return html;
+    }
+    
+    function resetViewerState() {
+        currentSelectedNode = null;
+        currentPropsData = null;
+        currentContextNode = null;
+        screenshotGeometry = null;
+        const existingOverlay = document.getElementById('elementOverlay');
+        if (existingOverlay) { existingOverlay.remove(); }
+    }
+
+    // All other event listeners
+    document.getElementById("treeSearch").addEventListener("input", () => filterTree());
+    document.getElementById("propsSearch").addEventListener("input", () => filterAndDisplayProperties());
+    document.getElementById("propertyValueSearch").addEventListener("input", () => filterTreeByPropertyValue());
+    document.getElementById('showOnlyMatches').addEventListener('change', () => filterTree());
+    document.getElementById('screenshotContainer').addEventListener('click', e => {
+        var screenshotImg = document.querySelector('.screenshot');
+        if (!screenshotImg) return;
+        var rect = screenshotImg.getBoundingClientRect();
+        findElementsByCoordinates(e.clientX - rect.left, e.clientY - rect.top);
+    });
+
+    document.addEventListener('click', e => {
+        const contextMenuItem = e.target.closest('.context-menu-item');
+        if (contextMenuItem) {
+            const type = contextMenuItem.getAttribute('data-type');
+            if (type) {
+                copyToClipboard(type);
+            }
+            e.preventDefault();
+            return;
+        }
+
+        if (e.target.classList.contains("node")) {
+            document.querySelectorAll(".node").forEach(n => n.classList.remove("selected"));
+            e.target.classList.add("selected");
+            currentSelectedNode = e.target;
+            refreshProperties();
+        }
+        if (e.target.classList.contains('toggle')) {
+            const nested = e.target.parentElement.querySelector('.nested');
+            if (nested) {
+                nested.classList.toggle('collapsed');
+                e.target.textContent = nested.classList.contains('collapsed') ? '+' : '-';
+            }
+        }
+        if (!e.target.closest('.context-menu')) hideContextMenus();
+    });
+
+    document.addEventListener('contextmenu', e => {
+        const node = e.target.closest('.node');
+        if (node) {
+            showTreeContextMenu(e, node);
+            e.preventDefault();
+        } else {
+            const targetCell = e.target.closest('.props-table td');
+            if (targetCell) {
+                const row = targetCell.parentElement;
+                if (row.cells.length === 2) {
+                    const propName = row.cells[0].textContent.trim();
+                    const propValue = row.cells[1].textContent.trim();
+                    showPropsContextMenu(e, propName, propValue);
+                    e.preventDefault();
+                }
+            }
+        }
+    });
+
+    document.getElementById('props').addEventListener('click', function(e) {
+        const row = e.target.closest('tr');
+        if (!row) return;
+
+        // Handle sorting click on header
+        const th = e.target.closest('th');
+        if (th) {
+            var columnIndex = th.cellIndex;
+            var newSortColumn = columnIndex === 0 ? 'Property' : 'Value';
+            var sortColumnDropdown = document.getElementById('sortColumn');
+            var sortOrderDropdown = document.getElementById('sortOrder');
+            
+            if (newSortColumn === sortColumnDropdown.value) {
+                if (sortOrderDropdown.value === 'asc') {
+                    sortOrderDropdown.value = 'desc';
+                } else if (sortOrderDropdown.value === 'desc') {
+                    sortOrderDropdown.value = 'none';
+                } else {
+                    sortOrderDropdown.value = 'asc';
+                }
+            } else {
+                sortColumnDropdown.value = newSortColumn;
+                sortOrderDropdown.value = 'asc';
+            }
+            refreshProperties();
+            return;
+        }
+
+        // Handle selection on body row
+        if (row.parentElement.tagName === 'TBODY') {
+            this.querySelectorAll('tr').forEach(r => r.classList.remove('table-info'));
+            row.classList.add('table-info');
+        }
+    });
+});
+
+var currentSelectedNode = null, currentPropsData = null, currentContextNode = null, currentContextPropName = null, currentContextPropValue = null, screenshotGeometry = null;
+
+function copyToClipboard(type) {
+    var textToCopy = "";
+
+    if (type === 'realname' || type === 'class' || type === 'objectName') {
+        if (currentContextNode) {
+            try {
+                var textarea = document.createElement('textarea');
+                textarea.innerHTML = currentContextNode.getAttribute("data-props");
+                var propsObj = JSON.parse(textarea.value);
+                textToCopy = propsObj[type] || "";
+            } catch(e) { textToCopy = "Property not found"; }
+        }
+    } else if (type === 'copy-as-object') {
+        if (currentContextNode) {
+            try {
+                var textarea = document.createElement('textarea');
+                textarea.innerHTML = currentContextNode.getAttribute("data-props");
+                var propsObj = JSON.parse(textarea.value);
+
+                var objectName = propsObj['objectName'];
+                var namePart = objectName ? `"${objectName}"` : "None";
+                var simplifiedType = propsObj['simplifiedType'] || '';
+                
+                var extraProps = {};
+                var realnameAttrs = {};
+                if (propsObj['realname']) {
+                    realnameAttrs = parseRealnameAttributes(propsObj['realname'], attributeWhitelist);
+                    extraProps = Object.assign(extraProps, realnameAttrs);
+                }
+
+                for (var key in propsObj) {
+                    if (attributeWhitelist.includes(key) && propsObj[key] !== '' && !realnameAttrs.hasOwnProperty(key)) {
+                        extraProps[key] = propsObj[key];
+                    }
+                }
+
+                var extraPropsString = Object.entries(extraProps).map(([key, value]) => `"${key}": "${value}"`).join(', ');
+
+                textToCopy = `BasePage.element(BasePage.quick_view, ${namePart}, "${simplifiedType}"`;
+                if (extraPropsString) {
+                    textToCopy += ` , **{${extraPropsString}}`;
+                }
+                textToCopy += `)`;
+
+            } catch(e) {
+                textToCopy = "Failed to generate object string";
+            }
+        }
+    } else if (type === 'propName') {
+        textToCopy = currentContextPropName || "";
+    } else if (type === 'propValue') {
+        textToCopy = currentContextPropValue || "";
+    }
+
+    function showToast(message) {
+        var feedback = document.createElement('div');
+        feedback.className = 'toast show position-fixed top-0 end-0 p-3 m-3 text-bg-primary border-0';
+        feedback.setAttribute('role', 'alert');
+        feedback.setAttribute('aria-live', 'assertive');
+        feedback.setAttribute('aria-atomic', 'true');
+        feedback.textContent = message;
+        document.body.appendChild(feedback);
+        setTimeout(function() { document.body.removeChild(feedback); }, 2500);
+    }
+
+    if (textToCopy) {
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            var shortText = textToCopy.length > 50 ? textToCopy.substring(0, 47) + '...' : textToCopy;
+            showToast('Copied "' + shortText + '" to clipboard.');
+        }).catch(err => {
+            console.error('Failed to copy: ', err);
+            showToast('Failed to copy.');
+        });
+    }
+    
+    hideContextMenus();
+}
+
+function filterTreeByPropertyValue() {
+    var searchTerm = document.getElementById('propertyValueSearch').value.toLowerCase();
+    var treeContainer = document.getElementById('treeContainer');
+    var allNodes = treeContainer.querySelectorAll('li');
+    var allSpans = treeContainer.querySelectorAll('.node');
+    allSpans.forEach(span => { span.style.backgroundColor = ''; });
+
+    if (searchTerm === '') {
+        allNodes.forEach(node => { node.style.display = ''; });
+        treeContainer.querySelectorAll('ul').forEach(ul => { ul.style.display = ''; });
+        return;
+    }
+    allNodes.forEach(node => { node.style.display = 'none'; });
+    allSpans.forEach(span => {
+        var props = span.getAttribute('data-props') || '{}';
+        try {
+            var propsObj = JSON.parse(props);
+            var found = Object.values(propsObj).some(value => typeof value === 'string' && value.toLowerCase().includes(searchTerm));
+            if (found) {
+                span.style.backgroundColor = 'yellow';
+                var current = span.closest('li');
+                while (current) {
+                    current.style.display = '';
+                    var parentUl = current.parentElement;
+                    if (parentUl && parentUl.tagName === 'UL') {
+                        parentUl.style.display = '';
+                        current = parentUl.closest('li');
+                    } else { break; }
+                }
+            }
+        } catch(e) {}
+    });
+}
+
+function clearSearch(inputId) {
+    document.getElementById(inputId).value = '';
+    if(inputId === 'treeSearch') filterTree();
+    if(inputId === 'propsSearch') filterAndDisplayProperties();
+    if(inputId === 'propertyValueSearch') filterTreeByPropertyValue();
+}
+
+function escapeRegExp(string) { return string.replace(/[.*+?^${}()|[\/]/g, '\$&'); }
+
+function highlightText(text, searchTerms) {
+    if (!searchTerms || searchTerms.length === 0) return text;
+    searchTerms = searchTerms.filter(Boolean);
+    if (searchTerms.length === 0) return text;
+    var regex = new RegExp(searchTerms.map(term => `(${escapeRegExp(term)})`).join('|'), 'gi');
+    return text.toString().replace(regex, '<mark>$&</mark>');
+}
+
+function formatPropertiesAsTable(propsStr, searchTerm, highlightTerms) {
+    try {
+        var props = JSON.parse(propsStr);
+        if (typeof props !== 'object' || props === null) return "<p>No properties available</p>";
+        
+        searchTerm = searchTerm || "";
+        var groups = {}, standalone = {};
+        
+        for (var key in props) {
+            if (props.hasOwnProperty(key)) {
+                var parts = key.split('_');
+                if (parts.length > 1 && ['geometry', 'visual'].includes(parts[0])) {
+                    var groupName = parts[0];
+                    if (!groups[groupName]) groups[groupName] = {};
+                    groups[groupName][parts.slice(1).join('_')] = props[key];
+                } else if (key === 'superclasses') {
+                    if (!groups['superclasses']) groups['superclasses'] = {};
+                    props[key].split(' > ').forEach((c, i) => { groups['superclasses']['level_' + i] = c; });
+                } else {
+                    standalone[key] = props[key];
+                }
+            }
+        }
+        
+        var sortColumn = document.getElementById('sortColumn').value;
+        var sortDirection = document.getElementById('sortOrder').value;
+        
+        const sortKeys = (obj) => {
+            let keys = Object.keys(obj);
+            if (sortDirection !== 'none') keys.sort((a, b) => sortDirection === 'asc' ? a.localeCompare(b) : b.localeCompare(a));
+            return keys;
+        };
+        
+        var table = "<table class='table table-sm table-bordered table-striped props-table'>";
+        table += "<thead><tr>";
+        table += `<th class='w-25 ${ (sortColumn === 'Property' && sortDirection !== 'none') ? 'sort-' + sortDirection : '' }'>Property</th>`;
+        table += `<th class='${ (sortColumn === 'Value' && sortDirection !== 'none') ? 'sort-' + sortDirection : '' }'>Value</th>`;
+        table += "</tr></thead><tbody>";
+        
+        sortKeys(standalone).forEach(key => {
+            var value = standalone[key] ?? "";
+            if (searchTerm === "" || key.toLowerCase().includes(searchTerm) || value.toString().toLowerCase().includes(searchTerm)) {
+                table += `<tr><td class='w-25'>${highlightText(key, highlightTerms)}</td><td>${highlightText(value, highlightTerms)}</td></tr>`;
+            }
+        });
+        
+        sortKeys(groups).forEach(groupName => {
+            var groupHasMatches = false;
+            var groupContent = "";
+            var groupPropKeys = sortKeys(groups[groupName]);
+
+            groupPropKeys.forEach(propName => {
+                var value = groups[groupName][propName] ?? "";
+                var displayName = propName.replace('level_', 'inheritance_');
+                if (searchTerm === "" || groupName.toLowerCase().includes(searchTerm) || displayName.toLowerCase().includes(searchTerm) || value.toString().toLowerCase().includes(searchTerm)) {
+                    groupContent += `<tr class='group-item group-${groupName}'><td class='ps-4'>${highlightText(displayName, highlightTerms)}</td><td>${highlightText(value, highlightTerms)}</td></tr>`;
+                    groupHasMatches = true;
+                }
+            });
+            
+            if (groupHasMatches) {
+                table += `<tr class='table-light' data-group='${groupName}'><td colspan='2'><strong>${highlightText(groupName, highlightTerms)}</strong></td></tr>`;
+                table += groupContent;
+            }
+        });
+        
+        table += "</tbody></table>";
+        return table;
+    } catch(e) {
+        console.error("Error formatting properties table", e);
+        return "<p class='text-danger'>Error displaying properties.</p>";
+    }
+}
+
+function refreshProperties() {
+    if (currentSelectedNode) {
+        currentPropsData = currentSelectedNode.getAttribute("data-props") || "{}";
+        filterAndDisplayProperties();
+        updateElementOverlay();
+    }
+}
+
+function updateElementOverlay() {
+    var existingOverlay = document.getElementById('elementOverlay');
+    if (existingOverlay) existingOverlay.remove();
+    if (!currentSelectedNode) return;
+    
+    try {
+        var propsObj = JSON.parse(currentSelectedNode.getAttribute("data-props") || "{}");
+        var { geometry_x, geometry_y, geometry_width, geometry_height } = propsObj;
+        
+        if ([geometry_x, geometry_y, geometry_width, geometry_height].every(p => p !== undefined)) {
+            if (!screenshotGeometry) {
+                const firstNodeWithGeo = Array.from(document.querySelectorAll('.node')).find(node => {
+                    try { return JSON.parse(node.getAttribute('data-props') || '{}').geometry_x !== undefined; } catch(e) { return false; }
+                });
+                if(firstNodeWithGeo) {
+                    const firstProps = JSON.parse(firstNodeWithGeo.getAttribute('data-props'));
+                    screenshotGeometry = { x: parseInt(firstProps.geometry_x) || 0, y: parseInt(firstProps.geometry_y) || 0 };
+                } else {
+                    screenshotGeometry = {x: 0, y: 0};
+                }
+            }
+            drawElementOverlay(parseInt(geometry_x) - screenshotGeometry.x, parseInt(geometry_y) - screenshotGeometry.y, parseInt(geometry_width), parseInt(geometry_height));
+        }
+    } catch(e) {
+        console.log('Error parsing properties for overlay:', e);
+    }
+}
+
+function drawElementOverlay(x, y, width, height) {
+    var screenshotImg = document.querySelector('.screenshot');
+    var container = document.getElementById('screenshotContainer');
+    if (!screenshotImg || !container) return;
+    
+    var imgRect = screenshotImg.getBoundingClientRect();
+    var scaleX = imgRect.width / screenshotImg.naturalWidth;
+    var scaleY = imgRect.height / screenshotImg.naturalHeight;
+    var offsetX = imgRect.left - container.getBoundingClientRect().left;
+    var offsetY = imgRect.top - container.getBoundingClientRect().top;
+
+    var overlay = document.createElement('div');
+    overlay.id = 'elementOverlay';
+    overlay.className = 'element-overlay';
+    overlay.style.left = `${(x * scaleX) + offsetX - 2}px`;
+    overlay.style.top = `${(y * scaleY) + offsetY - 2}px`;
+    overlay.style.width = `${width * scaleX}px`;
+    overlay.style.height = `${height * scaleY}px`;
+    container.appendChild(overlay);
+}
+
+function filterAndDisplayProperties() {
+    if (!currentPropsData) return;
+    var propsSearchTerm = document.getElementById('propsSearch').value.toLowerCase();
+    var propertyValueSearchTerm = document.getElementById('propertyValueSearch').value.toLowerCase();
+    var highlightTerms = [propsSearchTerm, propertyValueSearchTerm].filter(Boolean);
+    document.getElementById("props").innerHTML = formatPropertiesAsTable(currentPropsData, propsSearchTerm, highlightTerms);
+}
+
+function filterTree(nodesToDisplay = null) {
+    var searchTerm = document.getElementById('treeSearch').value.toLowerCase();
+    var treeContainer = document.getElementById('treeContainer');
+    var showOnlyMatchesChecked = document.getElementById('showOnlyMatches').checked;
+    treeContainer.querySelectorAll('.node').forEach(span => { span.style.backgroundColor = ''; });
+
+    var allLIs = treeContainer.querySelectorAll('li');
+    allLIs.forEach(li => { li.style.display = ''; });
+    treeContainer.querySelectorAll('ul').forEach(ul => { ul.style.display = ''; });
+
+    var nodesToProcess = [];
+    if (nodesToDisplay) {
+        nodesToProcess = nodesToDisplay;
+    } else if (searchTerm) {
+        treeContainer.querySelectorAll('.node').forEach(span => {
+            if (span.textContent.toLowerCase().includes(searchTerm)) nodesToProcess.push(span);
+        });
+    } else return;
+
+    if (showOnlyMatchesChecked && (nodesToProcess.length > 0 || searchTerm)) {
+        allLIs.forEach(li => { li.style.display = 'none'; });
+    }
+
+    nodesToProcess.forEach(nodeSpan => {
+        nodeSpan.style.backgroundColor = 'yellow';
+        var current = nodeSpan.closest('li');
+        while (current) {
+            current.style.display = '';
+            var parentUl = current.parentElement;
+            if (parentUl && parentUl.tagName === 'UL') {
+                parentUl.style.display = '';
+                current = parentUl.closest('li');
+            } else break;
+        }
+    });
+}
+
+function hideContextMenus() {
+    document.querySelectorAll('.context-menu').forEach(menu => menu.classList.remove('show'));
+}
+
+function showTreeContextMenu(e, node) { 
+    e.preventDefault();
+    hideContextMenus();
+    currentContextNode = node;
+    const menu = document.getElementById('treeContextMenu');
+    menu.style.left = `${e.pageX}px`;
+    menu.style.top = `${e.pageY}px`;
+    menu.classList.add('show');
+}
+
+function showPropsContextMenu(e, propName, propValue) { 
+    e.preventDefault();
+    hideContextMenus();
+    currentContextPropName = propName;
+    currentContextPropValue = propValue;
+    const menu = document.getElementById('propsContextMenu');
+    menu.style.left = `${e.pageX}px`;
+    menu.style.top = `${e.pageY}px`;
+    menu.classList.add('show');
+}
+
+function escapeHtml(unsafe) {
+    if (unsafe === null || unsafe === undefined) return "";
+    return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
+
+function findElementsByCoordinates(x, y) {
+    var screenshotImg = document.querySelector('.screenshot');
+    if (!screenshotImg) return;
+
+    if (!screenshotGeometry) {
+        const firstNodeWithGeo = Array.from(document.querySelectorAll('.node')).find(node => {
+            try { return JSON.parse(node.getAttribute('data-props') || '{}').geometry_x !== undefined; } catch(e) { return false; }
+        });
+        if(firstNodeWithGeo) {
+            const firstProps = JSON.parse(firstNodeWithGeo.getAttribute('data-props'));
+            screenshotGeometry = { x: parseInt(firstProps.geometry_x) || 0, y: parseInt(firstProps.geometry_y) || 0 };
+        } else {
+            screenshotGeometry = {x: 0, y: 0};
+        }
+    }
+
+    var scaleX = screenshotImg.naturalWidth / screenshotImg.width;
+    var scaleY = screenshotImg.naturalHeight / screenshotImg.height;
+    var clickX = (x * scaleX) + screenshotGeometry.x;
+    var clickY = (y * scaleY) + screenshotGeometry.y;
+
+    var matchingNodes = [];
+    document.querySelectorAll('.node').forEach(node => {
+        node.classList.remove('highlight');
+        try {
+            var propsObj = JSON.parse(node.getAttribute('data-props') || '{}');
+            var { geometry_x, geometry_y, geometry_width, geometry_height } = propsObj;
+            if ([geometry_x, geometry_y, geometry_width, geometry_height].every(p => p !== undefined)) {
+                const elemX = parseInt(geometry_x), elemY = parseInt(geometry_y), elemWidth = parseInt(geometry_width), elemHeight = parseInt(geometry_height);
+                if (clickX >= elemX && clickX <= elemX + elemWidth && clickY >= elemY && clickY <= elemY + elemHeight) {
+                    matchingNodes.push({node: node, width: elemWidth, height: elemHeight});
+                }
+            }
+        } catch (e) {}
+    });
+
+    if (matchingNodes.length > 0) {
+        const smallestNode = matchingNodes.reduce((prev, curr) => (prev.width * prev.height < curr.width * curr.height) ? prev : curr);
+        document.querySelectorAll(".node").forEach(n => n.classList.remove("selected"));
+        smallestNode.node.classList.add("selected");
+        currentSelectedNode = smallestNode.node;
+        refreshProperties();
+        matchingNodes.forEach(match => match.node.classList.add('highlight'));
+        filterTree(matchingNodes.map(m => m.node));
+    } else {
+        filterTree([]);
+    }
+}
+
+function parseRealnameAttributes(realnameString, whitelist) {
+    var attributes = {};
+    whitelist.forEach(function(key) {
+        var regex = new RegExp(key + "='([^']*)'");
+        var match = realnameString.match(regex);
+        if (match) {
+            attributes[key] = match[1];
+        }
+    });
+    return attributes;
+}
+
+</script>
+</body>
+</html>
