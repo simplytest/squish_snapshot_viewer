@@ -20,6 +20,10 @@ body {
     flex: 1;
     overflow-y: hidden;
 }
+.card-header {
+    background-color: #8D6E63;
+    color: white;
+}
 .card-body-scrollable {
     overflow-y: auto;
 }
@@ -44,10 +48,17 @@ body {
 }
 .props-table th {
     cursor: pointer;
+    background: #D7CCC8;
 }
 .props-table th.sort-asc::after { content: ' \25B2'; }
 .props-table th.sort-desc::after { content: ' \25BC'; }
 .props-table tr { cursor: pointer; }
+.props-table tr:hover {
+    background: #D7CCC8;
+}
+.props-table tr.table-info {
+    background-color: #A1887F !important;
+}
 .tree ul {
     list-style-type: none;
     padding-left: 20px;
@@ -59,20 +70,21 @@ body {
     border-radius: 3px;
     display: inline-block;
 }
-.node:hover { background-color: #e9ecef; }
-.node.selected { background-color: #cfe2ff; }
+.node:hover { background-color: #D7CCC8; }
+.node.selected { background-color: #A1887F; }
 .element-overlay {
     position: absolute;
-    border: 3px solid red;
-    background: rgba(255, 0, 0, 0.1);
+    border: 3px solid #FF0000;
+    background: rgba(255, 255, 0, 0.1);
     pointer-events: none;
     z-index: 10;
-    animation: pulsate 1s infinite;
+    animation: pulsate 2s infinite;
+    display: none; /* Hidden by default */
 }
 @keyframes pulsate {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.02); }
-    100% { transform: scale(1); }
+    0% { box-shadow: 0 0 0 0 rgba(255, 255, 0, 0.5); }
+    70% { box-shadow: 0 0 0 5px rgba(255, 255, 0, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 255, 0, 0); }
 }
 .context-menu {
     position: absolute;
@@ -102,6 +114,105 @@ body {
 }
 .nested.collapsed { display: none; }
 .node.highlight { background-color: #f0ad4e; }
+
+
+/* --- Themes --- */
+/* Default/Brown Theme */
+.theme-default .card-header { background-color: #8D6E63; color: white; }
+.theme-default #fileList .list-group-item.active { background-color: #A1887F; border-color: #8D6E63; color: #fff; }
+.theme-default .node.selected { background-color: #A1887F; }
+.theme-default .node:hover { background-color: #D7CCC8; }
+.theme-default .props-table th { background: #D7CCC8; }
+.theme-default .props-table tr:hover { background: #D7CCC8; }
+.theme-default .props-table tr.table-info { background-color: #A1887F !important; }
+.theme-default .btn-primary { background-color: #8D6E63; border-color: #8D6E63; }
+.theme-default .btn-primary:hover { background-color: #6D4C41; border-color: #6D4C41; }
+.theme-default .navbar { background-color: #4E342E !important; }
+
+/* Blue Theme */
+.theme-blue .card-header { background-color: #3498db; color: white; }
+.theme-blue #fileList .list-group-item.active { background-color: #aed6f1; border-color: #5dade2; color: #000; }
+.theme-blue .node.selected { background-color: #aed6f1; }
+.theme-blue .node:hover { background-color: #eaf2f8; }
+.theme-blue .props-table th { background: #eaf2f8; }
+.theme-blue .props-table tr:hover { background: #eaf2f8; }
+.theme-blue .props-table tr.table-info { background-color: #d4e6f1 !important; }
+.theme-blue .btn-primary { background-color: #3498db; border-color: #3498db; }
+.theme-blue .btn-primary:hover { background-color: #2980b9; border-color: #2980b9; }
+.theme-blue .navbar { background-color: #1A5276 !important; }
+
+/* Green Theme */
+.theme-green .card-header { background-color: #27AE60; color: white; }
+.theme-green #fileList .list-group-item.active { background-color: #ABEBC6; border-color: #58D68D; color: #000; }
+.theme-green .node.selected { background-color: #ABEBC6; }
+.theme-green .node:hover { background-color: #E8F8F5; }
+.theme-green .props-table th { background: #E8F8F5; }
+.theme-green .props-table tr:hover { background: #E8F8F5; }
+.theme-green .props-table tr.table-info { background-color: #ABEBC6 !important; }
+.theme-green .btn-primary { background-color: #27AE60; border-color: #27AE60; }
+.theme-green .btn-primary:hover { background-color: #1E8449; border-color: #1E8449; }
+.theme-green .navbar { background-color: #145A32 !important; }
+
+/* Gray Theme */
+.theme-gray .card-header { background-color: #566573; color: white; }
+.theme-gray #fileList .list-group-item.active { background-color: #D5D8DC; border-color: #808B96; color: #000; }
+.theme-gray .node.selected { background-color: #D5D8DC; }
+.theme-gray .node:hover { background-color: #F4F6F7; }
+.theme-gray .props-table th { background: #F4F6F7; }
+.theme-gray .props-table tr:hover { background: #F4F6F7; }
+.theme-gray .props-table tr.table-info { background-color: #D5D8DC !important; }
+.theme-gray .btn-primary { background-color: #566573; border-color: #566573; }
+.theme-gray .btn-primary:hover { background-color: #2C3E50; border-color: #2C3E50; }
+.theme-gray .navbar { background-color: #212F3C !important; }
+
+/* Magenta Theme */
+.theme-magenta .card-header { background-color: #C2185B; color: white; }
+.theme-magenta #fileList .list-group-item.active { background-color: #F8BBD0; border-color: #C2185B; color: #000; }
+.theme-magenta .node.selected { background-color: #F8BBD0; }
+.theme-magenta .node:hover { background-color: #FCE4EC; }
+.theme-magenta .props-table th { background: #FCE4EC; }
+.theme-magenta .props-table tr:hover { background: #FCE4EC; }
+.theme-magenta .props-table tr.table-info { background-color: #F8BBD0 !important; }
+.theme-magenta .btn-primary { background-color: #C2185B; border-color: #C2185B; }
+.theme-magenta .btn-primary:hover { background-color: #AD1457; border-color: #AD1457; }
+.theme-magenta .navbar { background-color: #880E4F !important; }
+
+/* Yellow Theme */
+.theme-yellow .card-header { background-color: #FBC02D; color: white; }
+.theme-yellow #fileList .list-group-item.active { background-color: #FFF9C4; border-color: #FBC02D; color: #000; }
+.theme-yellow .node.selected { background-color: #FFF9C4; }
+.theme-yellow .node:hover { background-color: #FFFDE7; }
+.theme-yellow .props-table th { background: #FFFDE7; }
+.theme-yellow .props-table tr:hover { background: #FFFDE7; }
+.theme-yellow .props-table tr.table-info { background-color: #FFF9C4 !important; }
+.theme-yellow .btn-primary { background-color: #FBC02D; border-color: #FBC02D; }
+.theme-yellow .btn-primary:hover { background-color: #F9A825; border-color: #F9A825; }
+.theme-yellow .navbar { background-color: #F57F17 !important; }
+
+/* Turquoise Theme */
+.theme-turquoise .card-header { background-color: #0097A7; color: white; }
+.theme-turquoise #fileList .list-group-item.active { background-color: #B2EBF2; border-color: #0097A7; color: #000; }
+.theme-turquoise .node.selected { background-color: #B2EBF2; }
+.theme-turquoise .node:hover { background-color: #E0F7FA; }
+.theme-turquoise .props-table th { background: #E0F7FA; }
+.theme-turquoise .props-table tr:hover { background: #E0F7FA; }
+.theme-turquoise .props-table tr.table-info { background-color: #B2EBF2 !important; }
+.theme-turquoise .btn-primary { background-color: #0097A7; border-color: #0097A7; }
+.theme-turquoise .btn-primary:hover { background-color: #00838F; border-color: #00838F; }
+.theme-turquoise .navbar { background-color: #006064 !important; }
+
+/* Red Theme */
+.theme-red .card-header { background-color: #D32F2F; color: white; }
+.theme-red #fileList .list-group-item.active { background-color: #FFCDD2; border-color: #D32F2F; color: #000; }
+.theme-red .node.selected { background-color: #FFCDD2; }
+.theme-red .node:hover { background-color: #FFEBEE; }
+.theme-red .props-table th { background: #FFEBEE; }
+.theme-red .props-table tr:hover { background: #FFEBEE; }
+.theme-red .props-table tr.table-info { background-color: #FFCDD2 !important; }
+.theme-red .btn-primary { background-color: #D32F2F; border-color: #D32F2F; }
+.theme-red .btn-primary:hover { background-color: #C62828; border-color: #C62828; }
+.theme-red .navbar { background-color: #B71C1C !important; }
+
 </style>
 </head>
 <body>
@@ -110,7 +221,7 @@ body {
     <div class="container-fluid">
         <a class="navbar-brand" href="#">Squish Snapshot Viewer</a>
         <div class="collapse navbar-collapse">
-            <form class="d-flex align-items-center gap-3">
+            <form class="d-flex align-items-center gap-3 w-100">
                 <div class="input-group input-group-sm">
                     <span class="input-group-text">Tree:</span>
                     <input id="treeSearch" class="form-control" type="search" placeholder="Search...">
@@ -123,21 +234,22 @@ body {
                     <span class="input-group-text">Values:</span>
                     <input id="propertyValueSearch" class="form-control" type="search" placeholder="Search...">
                 </div>
-                <div class="input-group input-group-sm">
-                    <label class="input-group-text" for="sortColumn">Sort:</label>
-                    <select class="form-select" id="sortColumn" onchange="refreshProperties()">
-                        <option value="Property">Property</option>
-                        <option value="Value">Value</option>
-                    </select>
-                    <select class="form-select" id="sortOrder" onchange="refreshProperties()">
-                        <option value="asc">Asc</option>
-                        <option value="desc">Desc</option>
-                        <option value="none">None</option>
-                    </select>
-                </div>
                 <div class="form-check form-switch">
                     <input class="form-check-input" type="checkbox" role="switch" id="showOnlyMatches">
                     <label class="form-check-label text-white" for="showOnlyMatches">Only Matches</label>
+                </div>
+                <div class="input-group input-group-sm ms-auto">
+                    <label class="input-group-text" for="theme-select">Theme:</label>
+                    <select class="form-select" id="theme-select">
+                        <option value="default">Brown</option>
+                        <option value="blue">Blue</option>
+                        <option value="green">Green</option>
+                        <option value="gray">Gray</option>
+                        <option value="magenta">Magenta</option>
+                        <option value="yellow">Yellow</option>
+                        <option value="turquoise">Turquoise</option>
+                        <option value="red">Red</option>
+                    </select>
                 </div>
             </form>
         </div>
@@ -146,12 +258,14 @@ body {
 
 <div class="container-fluid main-container">
     <div class="row h-100">
-        <div class="col-md-2 h-100 d-flex flex-column border-end p-0 bg-body-tertiary">
-            <div class="p-2 border-bottom">
-                <input type="file" id="folderInput" webkitdirectory style="display: none;" />
-                <button id="folderSelectBtn" class="btn btn-primary w-100">Select Folder</button>
+        <div class="col-md-2 h-100 d-flex flex-column p-2 bg-body-tertiary">
+            <div class="card shadow h-100">
+                <div class="card-header">
+                    <input type="file" id="folderInput" webkitdirectory style="display: none;" />
+                    <button id="folderSelectBtn" class="btn btn-primary w-100">Select Folder</button>
+                </div>
+                <div id="fileList" class="card-body overflow-auto"></div>
             </div>
-            <div id="fileList" class="list-group list-group-flush overflow-auto"></div>
         </div>
         <main class="col-md-10 h-100 d-flex flex-column p-2">
             <div id="initial-message" class="flex-grow-1 d-flex justify-content-center align-items-center text-muted h1">Select a folder to see snapshot files.</div>
@@ -197,6 +311,7 @@ body {
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 <script>
 let xmlFiles = [];
+let sortConfig = { column: 'Property', order: 'none' };
 var attributeWhitelist = ["name", "text", "title", "type", "unnamed", "visible", "windowTitle", "simplifiedType"];
 
 document.addEventListener("DOMContentLoaded", function() {
@@ -205,9 +320,21 @@ document.addEventListener("DOMContentLoaded", function() {
     const fileList = document.getElementById('fileList');
     const initialMessage = document.getElementById('initial-message');
     const viewerContent = document.getElementById('viewerContent');
+    const themeSelect = document.getElementById('theme-select');
 
     folderSelectBtn.addEventListener('click', () => folderInput.click());
     folderInput.addEventListener('change', handleFolderSelection);
+    themeSelect.addEventListener('change', function() {
+        document.body.classList.remove('theme-default', 'theme-blue', 'theme-green', 'theme-gray', 'theme-magenta', 'theme-yellow', 'theme-turquoise', 'theme-red');
+        document.body.classList.add(`theme-${this.value}`);
+        localStorage.setItem('theme', this.value);
+    });
+
+    const savedTheme = localStorage.getItem('theme') || 'default';
+    themeSelect.value = savedTheme;
+    document.body.classList.remove('theme-default', 'theme-blue', 'theme-green', 'theme-gray', 'theme-magenta', 'theme-yellow', 'theme-turquoise', 'theme-red');
+    document.body.classList.add(`theme-${savedTheme}`);
+
 
     function handleFolderSelection(event) {
         const files = event.target.files;
@@ -228,7 +355,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 fileList.appendChild(listItem);
             });
         } else {
-            initialMessage.textContent = 'No XML files found in the selected directory.';
+            initialMessage.textContent = 'No XML files found. Please select another folder.';
             initialMessage.classList.remove('d-none');
             viewerContent.classList.add('d-none');
         }
@@ -363,8 +490,10 @@ document.addEventListener("DOMContentLoaded", function() {
         currentPropsData = null;
         currentContextNode = null;
         screenshotGeometry = null;
-        const existingOverlay = document.getElementById('elementOverlay');
-        if (existingOverlay) { existingOverlay.remove(); }
+        const overlay = document.getElementById('elementOverlay');
+        if (overlay) {
+            overlay.style.display = 'none';
+        }
     }
 
     // All other event listeners
@@ -432,23 +561,21 @@ document.addEventListener("DOMContentLoaded", function() {
         // Handle sorting click on header
         const th = e.target.closest('th');
         if (th) {
-            var columnIndex = th.cellIndex;
-            var newSortColumn = columnIndex === 0 ? 'Property' : 'Value';
-            var sortColumnDropdown = document.getElementById('sortColumn');
-            var sortOrderDropdown = document.getElementById('sortOrder');
+            const newSortColumn = th.cellIndex === 0 ? 'Property' : 'Value';
             
-            if (newSortColumn === sortColumnDropdown.value) {
-                if (sortOrderDropdown.value === 'asc') {
-                    sortOrderDropdown.value = 'desc';
-                } else if (sortOrderDropdown.value === 'desc') {
-                    sortOrderDropdown.value = 'none';
+            if (newSortColumn === sortConfig.column) {
+                if (sortConfig.order === 'asc') {
+                    sortConfig.order = 'desc';
+                } else if (sortConfig.order === 'desc') {
+                    sortConfig.order = 'none';
                 } else {
-                    sortOrderDropdown.value = 'asc';
+                    sortConfig.order = 'asc';
                 }
             } else {
-                sortColumnDropdown.value = newSortColumn;
-                sortOrderDropdown.value = 'asc';
+                sortConfig.column = newSortColumn;
+                sortConfig.order = 'asc';
             }
+            
             refreshProperties();
             return;
         }
@@ -616,8 +743,8 @@ function formatPropertiesAsTable(propsStr, searchTerm, highlightTerms) {
             }
         }
         
-        var sortColumn = document.getElementById('sortColumn').value;
-        var sortDirection = document.getElementById('sortOrder').value;
+        var sortColumn = sortConfig.column;
+        var sortDirection = sortConfig.order;
         
         const sortKeys = (obj) => {
             let keys = Object.keys(obj);
@@ -675,9 +802,18 @@ function refreshProperties() {
 }
 
 function updateElementOverlay() {
-    var existingOverlay = document.getElementById('elementOverlay');
-    if (existingOverlay) existingOverlay.remove();
-    if (!currentSelectedNode) return;
+    var overlay = document.getElementById('elementOverlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'elementOverlay';
+        overlay.className = 'element-overlay';
+        document.getElementById('screenshotContainer').appendChild(overlay);
+    }
+
+    if (!currentSelectedNode) {
+        overlay.style.display = 'none';
+        return;
+    }
     
     try {
         var propsObj = JSON.parse(currentSelectedNode.getAttribute("data-props") || "{}");
@@ -695,32 +831,30 @@ function updateElementOverlay() {
                     screenshotGeometry = {x: 0, y: 0};
                 }
             }
-            drawElementOverlay(parseInt(geometry_x) - screenshotGeometry.x, parseInt(geometry_y) - screenshotGeometry.y, parseInt(geometry_width), parseInt(geometry_height));
+            
+            var screenshotImg = document.querySelector('.screenshot');
+            var container = document.getElementById('screenshotContainer');
+            if (!screenshotImg || !container) return;
+            
+            var imgRect = screenshotImg.getBoundingClientRect();
+            var scaleX = imgRect.width / screenshotImg.naturalWidth;
+            var scaleY = imgRect.height / screenshotImg.naturalHeight;
+            var offsetX = imgRect.left - container.getBoundingClientRect().left;
+            var offsetY = imgRect.top - container.getBoundingClientRect().top;
+
+            overlay.style.left = `${(parseInt(geometry_x) - screenshotGeometry.x) * scaleX + offsetX - 1}px`;
+            overlay.style.top = `${(parseInt(geometry_y) - screenshotGeometry.y) * scaleY + offsetY}px`;
+            overlay.style.width = `${parseInt(geometry_width) * scaleX}px`;
+            overlay.style.height = `${parseInt(geometry_height) * scaleY + 2}px`;
+            overlay.style.display = 'block';
+
+        } else {
+            overlay.style.display = 'none';
         }
     } catch(e) {
         console.log('Error parsing properties for overlay:', e);
+        overlay.style.display = 'none';
     }
-}
-
-function drawElementOverlay(x, y, width, height) {
-    var screenshotImg = document.querySelector('.screenshot');
-    var container = document.getElementById('screenshotContainer');
-    if (!screenshotImg || !container) return;
-    
-    var imgRect = screenshotImg.getBoundingClientRect();
-    var scaleX = imgRect.width / screenshotImg.naturalWidth;
-    var scaleY = imgRect.height / screenshotImg.naturalHeight;
-    var offsetX = imgRect.left - container.getBoundingClientRect().left;
-    var offsetY = imgRect.top - container.getBoundingClientRect().top;
-
-    var overlay = document.createElement('div');
-    overlay.id = 'elementOverlay';
-    overlay.className = 'element-overlay';
-    overlay.style.left = `${(x * scaleX) + offsetX - 2}px`;
-    overlay.style.top = `${(y * scaleY) + offsetY - 2}px`;
-    overlay.style.width = `${width * scaleX}px`;
-    overlay.style.height = `${height * scaleY}px`;
-    container.appendChild(overlay);
 }
 
 function filterAndDisplayProperties() {

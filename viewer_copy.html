@@ -6,6 +6,12 @@
 <style>
 /* squish_xml_viewer.css - Styles for the XML viewer */
 
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
 body {
     font-family: Arial, Helvetica, sans-serif; 
     margin: 0; 
@@ -17,7 +23,7 @@ body {
 
 .header {
     padding: 10px; 
-    background: #2c3e50; 
+    background: #5dade2; /* Light Blue */
     color: white; 
     display: flex; 
     align-items: center; 
@@ -66,7 +72,7 @@ body {
 }
 
 .file-sidebar {
-    width: 250px;
+    width: 350px; /* Increased width */
     border-right: 1px solid #ddd;
     display: flex;
     flex-direction: column;
@@ -93,26 +99,41 @@ body {
 
 .file-list {
     list-style: none;
-    padding: 0;
+    padding: 10px;
     margin: 0;
     overflow-y: auto;
     flex: 1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-content: flex-start;
 }
 
 .file-list-item {
+    flex-basis: calc(50% - 10px);
+    flex-grow: 1;
+    margin: 5px;
     padding: 10px;
     cursor: pointer;
-    border-bottom: 1px solid #eee;
+    border: 1px solid #ccc;
+    border-radius: 5px;
     font-size: 14px;
+    background: #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    word-wrap: break-word;
+    transition: all 0.2s ease;
 }
 
 .file-list-item:hover {
-    background: #f0f8ff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }
 
 .file-list-item.selected {
-    background: #d0e7ff;
+    background: #aed6f1; /* Lighter Blue */
     font-weight: bold;
+    border-color: #5dade2; /* Light Blue */
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }
 
 .viewer-container {
@@ -244,11 +265,11 @@ body {
 }
 
 .node:hover {
-    background: #eef;
+    background: #eaf2f8; /* Very Light Blue */
 }
 
 .node.selected {
-    background: #d0e7ff;
+    background: #aed6f1; /* Lighter Blue */
 }
 
 .props {
@@ -275,7 +296,7 @@ body {
 }
 
 .props-table th {
-    background: #f0f0f0;
+    background: #eaf2f8; /* Very Light Blue */
     font-weight: bold;
     cursor: pointer;
     position: relative;
@@ -309,13 +330,13 @@ body {
 }
 
 .props-table .group-header {
-    background: #e8f4fd;
+    background: #d4e6f1; /* Light Blue */
 }
 
 .props-table .group-header td {
     font-weight: bold; 
     color: #2c3e50; 
-    border-bottom: 2px solid #3498db;
+    border-bottom: 2px solid #5dade2; /* Light Blue */
 }
 
 .props-table .group-item {
@@ -329,12 +350,12 @@ body {
 }
 
 .props-table tr:hover {
-    background: #f0f8ff; 
+    background: #eaf2f8; /* Very Light Blue */
     cursor: pointer;
 }
 
 .props-table tr.selected {
-    background: #d4edda;
+    background: #d4e6f1; /* Light Blue */
 }
 
 .props-table tr.selected td {
@@ -399,8 +420,8 @@ body {
 
 .element-overlay {
     position: absolute;
-    border: 3px solid red;
-    background: rgba(255,0,0,0.1);
+    border: 3px solid #5dade2; /* Light Blue */
+    background: rgba(93, 173, 226, 0.1); /* Light Blue transparent */
     pointer-events: none;
     z-index: 10;
     animation: pulsate 1s infinite;
