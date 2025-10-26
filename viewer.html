@@ -213,6 +213,16 @@ body {
 .theme-red .btn-primary:hover { background-color: #C62828; border-color: #C62828; }
 .theme-red .navbar { background-color: #B71C1C !important; }
 
+/* Themed initial message background */
+.theme-default #initial-message { background-color: #EFEBE9; }
+.theme-blue #initial-message { background-color: #eaf2f8; }
+.theme-green #initial-message { background-color: #E8F8F5; }
+.theme-gray #initial-message { background-color: #F4F6F7; }
+.theme-magenta #initial-message { background-color: #FCE4EC; }
+.theme-yellow #initial-message { background-color: #FFFDE7; }
+.theme-turquoise #initial-message { background-color: #E0F7FA; }
+.theme-red #initial-message { background-color: #FFEBEE; }
+
 </style>
 </head>
 <body>
@@ -268,7 +278,53 @@ body {
             </div>
         </div>
         <main class="col-md-10 h-100 d-flex flex-column p-2">
-            <div id="initial-message" class="flex-grow-1 d-flex justify-content-center align-items-center text-muted h1">Select a folder to see snapshot files.</div>
+            <div id="initial-message" class="flex-grow-1 d-flex flex-column justify-content-center align-items-center text-muted">
+                <svg width="200" height="200" viewBox="0 0 200 200">
+                    <defs>
+                        <style>
+                            #initial-message svg {
+                                animation: squish-animation 3s ease-in-out infinite;
+                                transform-origin: center bottom;
+                            }
+                            @keyframes squish-animation {
+                                0% { transform: scale(1, 1); }
+                                50% { transform: scale(1.1, 0.9); }
+                                100% { transform: scale(1, 1); }
+                            }
+                            @keyframes inspect-animation {
+                                0% { transform: translate(0, 0) rotate(0deg); }
+                                25% { transform: translate(10px, -10px) rotate(15deg); }
+                                75% { transform: translate(-10px, 10px) rotate(-15deg); }
+                                100% { transform: translate(0, 0) rotate(0deg); }
+                            }
+                            .oven-body { fill: #bdc3c7; stroke: #7f8c8d; stroke-width: 2; }
+                            .oven-window { fill: #ecf0f1; stroke: #95a5a6; stroke-width: 1; }
+                            .oven-panel { fill: #34495e; }
+                            .magnifying-glass { fill: none; stroke: #3498db; stroke-width: 8; }
+                            .magnifying-glass-handle { stroke: #3498db; stroke-width: 10; }
+                            .magnifying-glass-group {
+                                animation: inspect-animation 4s ease-in-out infinite;
+                                transform-origin: center center;
+                            }
+                        </style>
+                    </defs>
+
+                    <g transform="translate(20, 30)">
+                        <!-- RATIONAL Combi-Steamer Icon -->
+                        <rect class="oven-body" x="10" y="50" width="140" height="110" rx="5" />
+                        <rect class="oven-window" x="25" y="65" width="80" height="80" rx="3" />
+                        <rect class="oven-panel" x="115" y="65" width="25" height="80" rx="3" />
+                        <line x1="15" y1="110" x2="25" y2="110" stroke="#7f8c8d" stroke-width="4" stroke-linecap="round" />
+
+                        <!-- Magnifying Glass -->
+                        <g class="magnifying-glass-group" transform="translate(90, 50)">
+                            <circle class="magnifying-glass" cx="0" cy="0" r="25" />
+                            <line class="magnifying-glass-handle" x1="22" y1="22" x2="40" y2="40" stroke-linecap="round" />
+                        </g>
+                    </g>
+                </svg>
+                <h1 id="initial-message-text" class="h1">Select a folder to start.</h1>
+            </div>
             <div id="viewerContent" class="d-none flex-grow-1 h-100">
                 <div class="row h-100">
                     <div class="col-md-4 h-100 d-flex flex-column">
@@ -340,10 +396,12 @@ document.addEventListener("DOMContentLoaded", function() {
         const files = event.target.files;
         xmlFiles = Array.from(files).filter(file => file.name.endsWith('.xml')).sort((a, b) => a.name.localeCompare(b.name));
         
+        const messageText = document.getElementById('initial-message-text');
         fileList.innerHTML = '';
         
         if (xmlFiles.length > 0) {
-            initialMessage.classList.add('d-none');
+            messageText.textContent = 'Select a file to view.';
+            initialMessage.classList.remove('d-none');
             viewerContent.classList.add('d-none');
             xmlFiles.forEach((file, index) => {
                 const listItem = document.createElement('a');
@@ -355,7 +413,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 fileList.appendChild(listItem);
             });
         } else {
-            initialMessage.textContent = 'No XML files found. Please select another folder.';
+            messageText.textContent = 'No XML files found. Please select another folder.';
             initialMessage.classList.remove('d-none');
             viewerContent.classList.add('d-none');
         }
