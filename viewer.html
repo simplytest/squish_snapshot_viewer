@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Squish Snapshot Viewer</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <style>
 :root {
     --bs-font-sans-serif: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
@@ -24,6 +25,11 @@ body {
     background-color: #8D6E63;
     color: white;
 }
+.card-header .input-group-text {
+    background-color: rgba(0,0,0,0.1);
+    color: inherit;
+    border-color: rgba(0,0,0,0.2);
+}
 .card-body-scrollable {
     overflow-y: auto;
 }
@@ -35,11 +41,9 @@ body {
     justify-content: center;
     align-items: center;
     padding: 1rem;
-    overflow: hidden;
+    overflow: auto;
 }
 .screenshot {
-    max-width: 100%;
-    max-height: 100%;
     object-fit: contain;
     border: 1px solid #dee2e6;
 }
@@ -223,6 +227,47 @@ body {
 .theme-turquoise #initial-message { background-color: #E0F7FA; }
 .theme-red #initial-message { background-color: #FFEBEE; }
 
+/* Layout Switcher Styles */
+#right-panel-container.side-by-side {
+    flex-direction: row !important;
+    gap: 0.5rem;
+}
+#right-panel-container.side-by-side > .card {
+    width: 50%;
+    height: 100%;
+}
+#right-panel-container.side-by-side > .card.flex-grow-1 {
+    flex-grow: 1 !important; /* Ensure it still grows */
+}
+
+#file-list-col {
+    transition: flex 0.3s ease, width 0.3s ease;
+}
+#file-list-col.collapsed {
+    flex: 0 0 100px !important;
+    width: 100px !important;
+}
+#file-list-col.collapsed .file-list-title,
+#file-list-col.collapsed .card-body {
+    display: none;
+}
+#file-list-col.collapsed .card-header {
+    justify-content: center;
+}
+#file-list-col.collapsed #sidebar-toggle-btn {
+    font-size: 1.5rem;
+    font-weight: bold;
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+#file-list-col.collapsed .folder-select-text {
+    display: none;
+}
+
 </style>
 </head>
 <body>
@@ -231,53 +276,63 @@ body {
     <div class="container-fluid">
         <a class="navbar-brand" href="#">Squish Snapshot Viewer</a>
         <div class="collapse navbar-collapse">
-            <form class="d-flex align-items-center gap-3 w-100">
-                <div class="input-group input-group-sm">
-                    <span class="input-group-text">Tree:</span>
-                    <input id="treeSearch" class="form-control" type="search" placeholder="Search...">
-                </div>
-                <div class="input-group input-group-sm">
-                    <span class="input-group-text">Props:</span>
-                    <input id="propsSearch" class="form-control" type="search" placeholder="Search...">
-                </div>
-                <div class="input-group input-group-sm">
-                    <span class="input-group-text">Values:</span>
-                    <input id="propertyValueSearch" class="form-control" type="search" placeholder="Search...">
-                </div>
-                <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" role="switch" id="showOnlyMatches">
-                    <label class="form-check-label text-white" for="showOnlyMatches">Only Matches</label>
-                </div>
-                <div class="input-group input-group-sm ms-auto">
-                    <label class="input-group-text" for="theme-select">Theme:</label>
-                    <select class="form-select" id="theme-select">
-                        <option value="default">Brown</option>
-                        <option value="blue">Blue</option>
-                        <option value="green">Green</option>
-                        <option value="gray">Gray</option>
-                        <option value="magenta">Magenta</option>
-                        <option value="yellow">Yellow</option>
-                        <option value="turquoise">Turquoise</option>
-                        <option value="red">Red</option>
-                    </select>
-                </div>
-            </form>
-        </div>
+                        <form class="d-flex w-100">
+                            <div class="ms-auto d-flex align-items-center gap-3 flex-nowrap">
+                                <div class="input-group input-group-sm" style="width: 360px;">
+                                    <span class="input-group-text">Tree:</span>
+                                    <input id="treeSearch" class="form-control" type="search" placeholder="Search...">
+                                </div>
+                                <div class="input-group input-group-sm" style="width: 360px;">
+                                    <span class="input-group-text">Props:</span>
+                                    <input id="propsSearch" class="form-control" type="search" placeholder="Search...">
+                                </div>
+                                <div class="input-group input-group-sm" style="width: 360px;">
+                                    <span class="input-group-text">Values:</span>
+                                    <input id="propertyValueSearch" class="form-control" type="search" placeholder="Search...">
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="layout-switch">
+                                    <label class="form-check-label text-white text-nowrap" for="layout-switch">Side-by-side</label>
+                                </div>
+                                <div class="input-group input-group-sm" style="width: 260px;">
+                                    <label class="input-group-text" for="theme-select">Theme:</label>
+                                    <select class="form-select" id="theme-select">
+                                        <option value="default">Brown</option>
+                                        <option value="blue">Blue</option>
+                                        <option value="green">Green</option>
+                                        <option value="gray">Gray</option>
+                                        <option value="magenta">Magenta</option>
+                                        <option value="yellow">Yellow</option>
+                                        <option value="turquoise">Turquoise</option>
+                                        <option value="red">Red</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </form>        </div>
     </div>
 </nav>
 
 <div class="container-fluid main-container">
     <div class="row h-100">
-        <div class="col-md-2 h-100 d-flex flex-column p-2 bg-body-tertiary">
-            <div class="card shadow h-100">
-                <div class="card-header">
-                    <input type="file" id="folderInput" webkitdirectory style="display: none;" />
-                    <button id="folderSelectBtn" class="btn btn-primary w-100">Select Folder</button>
+        <div id="file-list-col" class="col-md-2 h-100 d-flex flex-column p-2 bg-body-tertiary">
+            <div class="card shadow h-100 d-flex flex-column">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span class="file-list-title">Folder Files</span>
+                    <button id="sidebar-toggle-btn" class="btn btn-sm btn-outline-light">«</button>
                 </div>
-                <div id="fileList" class="card-body overflow-auto"></div>
+                <div class="card-body d-flex flex-column p-0">
+                    <div class="p-2 border-bottom">
+                        <input type="file" id="folderInput" webkitdirectory style="display: none;" />
+                        <button id="folderSelectBtn" class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2">
+                            <i class="bi bi-folder2-open"></i>
+                            <span class="folder-select-text">Select Folder</span>
+                        </button>
+                    </div>
+                    <div id="fileList" class="overflow-auto flex-grow-1 p-2"></div>
+                </div>
             </div>
         </div>
-        <main class="col-md-10 h-100 d-flex flex-column p-2">
+        <main id="main-content-col" class="col-md-10 h-100 d-flex flex-column p-2">
             <div id="initial-message" class="flex-grow-1 d-flex flex-column justify-content-center align-items-center text-muted">
                 <svg width="200" height="200" viewBox="0 0 200 200">
                     <defs>
@@ -329,15 +384,26 @@ body {
                 <div class="row h-100">
                     <div class="col-md-4 h-100 d-flex flex-column">
                         <div class="card h-100 d-flex flex-column shadow" style="min-height: 0;">
-                            <div class="card-header">Object Tree</div>
+                            <div id="object-tree-header" class="card-header d-flex justify-content-between align-items-center py-1" title="Double-click to expand/collapse all nodes">
+                                <span class="text-nowrap">Object Tree</span>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="showOnlyMatches" title="Only show nodes that match the current search">
+                                    <label class="form-check-label text-nowrap" for="showOnlyMatches">Only matches</label>
+                                </div>
+                            </div>
                             <div id="treeContainer" class="card-body card-body-scrollable"></div>
                         </div>
                     </div>
-                    <div class="col-md-8 h-100 d-flex flex-column">
+                    <div id="right-panel-container" class="col-md-8 h-100 d-flex flex-column">
                         <div class="card mb-2 shadow">
-                            <div class="card-header d-flex justify-content-between align-items-center">
-                                <span>Squish Snapshot</span>
-                                <small id="screenshot-path" class="text-muted"></small>
+                            <div class="card-header d-flex align-items-center gap-2 py-1">
+                                <span class="text-nowrap">Squish Snapshot:</span>
+                                <small id="screenshot-path" class="text-white-50 text-nowrap"></small>
+                                <div class="d-flex align-items-center ms-auto" style="width: 250px;">
+                                    <label class="col-form-label me-2 text-white-50" for="scale-slider">Zoom:</label>
+                                    <input type="range" class="form-range" id="scale-slider" min="0.1" max="3" step="0.05" value="1">
+                                    <span id="scale-value" class="ms-2 text-nowrap">1.0x</span>
+                                </div>
                             </div>
                             <div id="screenshotContainer" class="card-body screenshot-container" style="min-height: 200px;"></div>
                         </div>
@@ -377,6 +443,24 @@ document.addEventListener("DOMContentLoaded", function() {
     const initialMessage = document.getElementById('initial-message');
     const viewerContent = document.getElementById('viewerContent');
     const themeSelect = document.getElementById('theme-select');
+    const layoutSwitch = document.getElementById('layout-switch');
+    const rightPanelContainer = document.getElementById('right-panel-container');
+    const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
+    const fileListCol = document.getElementById('file-list-col');
+    const mainContentCol = document.getElementById('main-content-col');
+    const scaleSlider = document.getElementById('scale-slider');
+    const scaleValue = document.getElementById('scale-value');
+
+    scaleSlider.addEventListener('input', function() {
+        const scale = parseFloat(this.value);
+        const screenshotImg = document.querySelector('.screenshot');
+        if (screenshotImg && screenshotImg.naturalWidth > 0) {
+            screenshotImg.style.width = (screenshotImg.naturalWidth * scale) + 'px';
+            screenshotImg.style.height = (screenshotImg.naturalHeight * scale) + 'px';
+            updateElementOverlay();
+        }
+        scaleValue.textContent = `${scale.toFixed(1)}x`;
+    });
 
     folderSelectBtn.addEventListener('click', () => folderInput.click());
     folderInput.addEventListener('change', handleFolderSelection);
@@ -390,6 +474,72 @@ document.addEventListener("DOMContentLoaded", function() {
     themeSelect.value = savedTheme;
     document.body.classList.remove('theme-default', 'theme-blue', 'theme-green', 'theme-gray', 'theme-magenta', 'theme-yellow', 'theme-turquoise', 'theme-red');
     document.body.classList.add(`theme-${savedTheme}`);
+
+    layoutSwitch.addEventListener('change', function() {
+        toggleLayout(this.checked);
+        localStorage.setItem('sideBySideLayout', this.checked);
+    });
+
+    function toggleLayout(isSideBySide) {
+        if (isSideBySide) {
+            rightPanelContainer.classList.add('side-by-side');
+        } else {
+            rightPanelContainer.classList.remove('side-by-side');
+        }
+    }
+
+    // On load, apply saved layout
+    const savedLayout = localStorage.getItem('sideBySideLayout') === 'true';
+    layoutSwitch.checked = savedLayout;
+    toggleLayout(savedLayout);
+
+    function toggleSidebar(collapse) {
+        const folderSelectBtn = document.getElementById('folderSelectBtn');
+        if (collapse) {
+            fileListCol.classList.add('collapsed');
+            mainContentCol.classList.remove('col-md-10');
+            mainContentCol.classList.add('col');
+            sidebarToggleBtn.textContent = '»';
+            folderSelectBtn.title = 'Select Folder';
+        } else {
+            fileListCol.classList.remove('collapsed');
+            mainContentCol.classList.remove('col');
+            mainContentCol.classList.add('col-md-10');
+            sidebarToggleBtn.textContent = '«';
+            folderSelectBtn.title = '';
+        }
+    }
+
+    sidebarToggleBtn.addEventListener('click', function() {
+        const isCollapsed = !fileListCol.classList.contains('collapsed');
+        toggleSidebar(isCollapsed);
+        localStorage.setItem('sidebarCollapsed', isCollapsed);
+    });
+
+    // On load, apply saved sidebar state
+    const savedSidebarState = localStorage.getItem('sidebarCollapsed') === 'true';
+    toggleSidebar(savedSidebarState);
+
+    const objectTreeHeader = document.getElementById('object-tree-header');
+    if (objectTreeHeader) {
+        objectTreeHeader.addEventListener('dblclick', () => {
+            const treeContainer = document.getElementById('treeContainer');
+            if (!treeContainer) return;
+
+            const nestedLists = treeContainer.querySelectorAll('ul.nested');
+            if (nestedLists.length === 0) return;
+
+            const areAnyExpanded = Array.from(nestedLists).some(ul => !ul.classList.contains('collapsed'));
+
+            nestedLists.forEach(ul => {
+                if (areAnyExpanded) {
+                    ul.classList.add('collapsed');
+                } else {
+                    ul.classList.remove('collapsed');
+                }
+            });
+        });
+    }
 
 
     function handleFolderSelection(event) {
@@ -450,6 +600,19 @@ document.addEventListener("DOMContentLoaded", function() {
             const screenshotContainer = document.getElementById('screenshotContainer');
             if (imageElem && imageElem.textContent) {
                 screenshotContainer.innerHTML = `<img class='screenshot' src='data:image/png;base64,${imageElem.textContent.trim()}'>`;
+                const screenshotImg = screenshotContainer.querySelector('.screenshot');
+                screenshotImg.onload = () => {
+                    const container = document.getElementById('screenshotContainer');
+                    if (container.clientWidth > 0 && screenshotImg.naturalWidth > 0) {
+                        const scaleX = container.clientWidth / screenshotImg.naturalWidth;
+                        const scaleY = container.clientHeight / screenshotImg.naturalHeight;
+                        const initialScale = Math.min(scaleX, scaleY, 1);
+                        
+                        const scaleSlider = document.getElementById('scale-slider');
+                        scaleSlider.value = initialScale;
+                        scaleSlider.dispatchEvent(new Event('input'));
+                    }
+                };
             } else {
                 screenshotContainer.innerHTML = "<p class='text-center text-muted m-0'><i>No screenshot found.</i></p>";
             }
@@ -583,14 +746,17 @@ document.addEventListener("DOMContentLoaded", function() {
             currentSelectedNode = e.target;
             refreshProperties();
         }
-        if (e.target.classList.contains('toggle')) {
-            const nested = e.target.parentElement.querySelector('.nested');
+        if (!e.target.closest('.context-menu')) hideContextMenus();
+    });
+
+    document.addEventListener('dblclick', e => {
+        const node = e.target.closest('.node');
+        if (node) {
+            const nested = node.parentElement.querySelector('.nested');
             if (nested) {
                 nested.classList.toggle('collapsed');
-                e.target.textContent = nested.classList.contains('collapsed') ? '+' : '-';
             }
         }
-        if (!e.target.closest('.context-menu')) hideContextMenus();
     });
 
     document.addEventListener('contextmenu', e => {
@@ -767,7 +933,7 @@ function clearSearch(inputId) {
     if(inputId === 'propertyValueSearch') filterTreeByPropertyValue();
 }
 
-function escapeRegExp(string) { return string.replace(/[.*+?^${}()|[\/]/g, '\$&'); }
+function escapeRegExp(string) { return string.replace(/[.*+?^${}()|\/]/g, '\$&'); }
 
 function highlightText(text, searchTerms) {
     if (!searchTerms || searchTerms.length === 0) return text;
@@ -1006,8 +1172,9 @@ function findElementsByCoordinates(x, y) {
         }
     }
 
-    var scaleX = screenshotImg.naturalWidth / screenshotImg.width;
-    var scaleY = screenshotImg.naturalHeight / screenshotImg.height;
+    var imgRect = screenshotImg.getBoundingClientRect();
+    var scaleX = screenshotImg.naturalWidth / imgRect.width;
+    var scaleY = screenshotImg.naturalHeight / imgRect.height;
     var clickX = (x * scaleX) + screenshotGeometry.x;
     var clickY = (y * scaleY) + screenshotGeometry.y;
 
