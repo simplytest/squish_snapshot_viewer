@@ -1,12 +1,186 @@
+<style>
+/* Hilfe-Popup Styles */
+#help-popup {
+    position: fixed;
+    top: 0;
+    right: 0;
+    height: 100vh;
+    width: 50vw;
+    max-width: none;
+    min-width: 320px;
+    background: #fff;
+    box-shadow: -4px 0 24px rgba(0,0,0,0.18);
+    z-index: 2000;
+    display: none;
+    animation: slide-in-right 0.4s cubic-bezier(.4,0,.2,1);
+    border-radius: 12px 0 0 12px;
+    display: flex;
+    flex-direction: column;
+}
+@keyframes slide-in-right {
+    from { right: -60vw; opacity: 0; }
+    to { right: 0; opacity: 1; }
+}
+#help-popup .help-header {
+    background: #8D6E63;
+    color: #fff;
+    padding: 0.75rem 1.25rem;
+    font-size: 1.25rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-radius: 12px 0 0 0;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+#help-popup .help-close {
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 1.5rem;
+    cursor: pointer;
+    margin-left: 1rem;
+}
+#help-popup .help-content {
+    padding: 1.25rem;
+    overflow-y: auto;
+    flex: 1 1 auto;
+}
+</style>
+<!-- Hilfe-Popup -->
+<div id="help-popup">
+    <div class="help-header">
+        Hilfe
+        <button class="help-close" id="help-close-btn" title="Schließen">
+            <i class="bi bi-x-lg"></i>
+        </button>
+    </div>
+    <div class="help-content">
+        <div id="help-dynamic-content">
+            <div class="text-center text-muted">Lade Hilfe ...</div>
+        </div>
+    </div>
+</div>
 <!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<script>
+// Help text as Markdown string (editable here)
+const HILFE_MD = `
+# Squish Snapshot Viewer Tool
+
+This tool was created to visually display Squish snapshots and to provide quick navigation, search, and localization 
+of elements from the Squish snapshot XML file. The XML hierarchy is represented in a tree structure.  
+Selecting an element in the tree causes its geometry and coordinates (if available) to be used to visually highlight the 
+element in the image. Furthermore, the properties of the selected element are displayed in a table.
+
+![Squish Snapshot Viewer](images/viewer_app.png)
+
+## Folder Files Card
+Folder files contains all XML files from a selected folder. When you start the page first time or you refresh the page,
+then no files will be desplayed and you have to load xml files via the **"Select Folder"** button.
+- Click **"Select Folder"** to choose a folder containing XML files.
+- The found XML files will appear in the list.
+
+In case of big pictures and less space on monitor, you can also collapse and expand the file list via the toggle button in the header of the file list panel.
+
+![Folder Files Card](images/folder_files.png) 
+
+
+1. **Toggle Button**: Collapse/Expand the file list panel.
+2. **Select Folder Button**: Opens folder selection dialog.
+3. **Folder Files List**: Lists all XML files found in the selected folder.
+
+How it looks if it is collapsed:
+
+![Collapsed Folder Files Casrd](images/folder_collapsed.png)
+
+
+**Note**:
+* Due to browser security restrictions, the application cannot remember previously selected folders.
+* Only XML files directly within the selected folder are listed; subfolder files are not included.
+* Depending on your browser settings, you might need to grant permission to access local files.
+* If no XML files are found in the selected folder nothing will be displayed.
+
+## Object Tree Card
+The Object Tree reppresents the hierarchical structure of the XML file. You can expand and collapse nodes by clicking on the node or the toggle icon or
+you can select an element to display its properties and highlight it in the screenshot and if element has geometry information, then an overlay over the position in the screenshot will be displayed.
+Bei clicking on en aelement with the right mouse button, a context menu will open with copy options.
+
+**Note**: the Copy as BasePage object works only for two dimensinal locator elements
+
+![Object Tree Card](images/ebject_tree.png)
+
+1. expand/collapse toggle
+2. Node name
+3. Only Matches checkbox to show only matching elements in the tree. in case of clicking in a region of the screenshot where multiple elements are located, only the matching elements will be displayed in the tree. In case of typing search terms in the search fields, only the matching elements will be displayed in the tree.
+4. Context menu (right click) to copy element realName ( the same as in Squish)
+5. Context menu (right click) to copy element as BasePage object (only for 2D locator elements)
+6. Context menu (right click) to copy element class name
+7. Context menu (right click) to copy element object name
+
+
+## Squish Snapshot Card
+The Squish Snapshot card displays the screenshot image from the snapshot XML file. 
+You can zoom in and out via the zoom slider. Clicking on the screenshot will search for the smallest matching element in the object tree and select it.
+
+![Squish Snapshot Card](images/squish_snapshot.png)
+
+1.  **Zoom Slider**: Zoom in/out the screenshot image. Thze scale percentage is displayed next to the slider. The overlay highlighting the selected element will scale accordingly.
+2.  **Screenshot Image**: Displays the UI image from the snapshot XML file.
+3.  **Click Area**: Click on the screenshot to find and select the smallest matching element in the object tree.
+4.  **Screenshot File Name**: 
+
+## Selected Node Properties Card
+The Selected Node Properties card displays the properties of the currently selected node in a table format.
+you also can right click on a property to open a context menu with copy options.
+
+![Selected Node Properties Card](images/node_properties.png)
+
+1. **Property Name**: Column with property names. Click the header to sort ascending/descending or none.
+2. **Property Value**: Column with property values. Click the header to sort ascending/descending or none.
+3. **Sort indicators**: Indicate the current sort order for each column (ascending, descending, none).
+4. **Context Menu (right click)**: Opens context menu to copy property name or property value.
+5. **Copy Options**: Right-click on a property to copy its name or value.
+
+## Helper Functions
+
+1. **Expand/Collapse All**: Double-click the header of the object tree to expand or collapse all nodes.
+2. **Highlighting Matches**: When searching in the tree, properties, or values, matching elements are highlighted in yellow.
+3. **Side-by-Side Layout**: Use the layout switch to toggle between side-by-side and stacked views of the right panel.
+4. **Theme Selection**: Use the theme dropdown to change the color scheme of the application and the help popup.
+5. **Help Popup**: Access the help popup anytime via the question mark in the top right. Close it with the X button.
+3. **Copying Values**: Right-click on a property or node to copy its value to the clipboard.
+
+## Summary
+- Folder Files Card: Load and display XML files from a selected folder.
+- Object Tree Card: Navigate and select elements from the XML hierarchy.
+- Squish Snapshot Card: View and interact with the UI screenshot from the snapshot.
+- Selected Node Properties Card: Display properties of the currently selected element.
+
+---
+
+*Questions or feedback? Contact the developer.*
+`;
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Squish Snapshot Viewer</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+ <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <style>
+/* Theme-Unterstützung für Hilfe-Popup-Header */
+.theme-default #help-popup .help-header { background-color: #8D6E63; color: white; }
+.theme-blue #help-popup .help-header { background-color: #3498db; color: white; }
+.theme-green #help-popup .help-header { background-color: #27AE60; color: white; }
+.theme-gray #help-popup .help-header { background-color: #566573; color: white; }
+.theme-magenta #help-popup .help-header { background-color: #C2185B; color: white; }
+.theme-yellow #help-popup .help-header { background-color: #FBC02D; color: white; }
+.theme-turquoise #help-popup .help-header { background-color: #0097A7; color: white; }
+.theme-red #help-popup .help-header { background-color: #D32F2F; color: white; }
 :root {
     --bs-font-sans-serif: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
@@ -24,6 +198,12 @@ body {
 .card-header {
     background-color: #8D6E63;
     color: white;
+    min-height: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    justify-content: space-between;
 }
 .card-header .input-group-text {
     background-color: rgba(0,0,0,0.1);
@@ -99,6 +279,7 @@ body {
     box-shadow: 2px 2px 10px rgba(0,0,0,0.3);
     z-index: 1000;
     display: none;
+    flex-direction: column;
 }
 .context-menu-item { padding: 5px 15px; cursor: pointer; }
 .context-menu-item:hover { background: #f0f0f0; }
@@ -123,7 +304,9 @@ body {
 /* --- Themes --- */
 /* Default/Brown Theme */
 .theme-default .card-header { background-color: #8D6E63; color: white; }
-.theme-default #fileList .list-group-item.active { background-color: #A1887F; border-color: #8D6E63; color: #fff; }
+.theme-default #fileList .file-list-button { background-color: #EFEBE9; border-color: #D7CCC8; color: #3E2723; }
+.theme-default #fileList .file-list-button:hover { background-color: #D7CCC8; }
+.theme-default #fileList .file-list-button.active { background-color: #A1887F; border-color: #8D6E63; color: #fff; }
 .theme-default .node.selected { background-color: #A1887F; }
 .theme-default .node:hover { background-color: #D7CCC8; }
 .theme-default .props-table th { background: #D7CCC8; }
@@ -135,7 +318,9 @@ body {
 
 /* Blue Theme */
 .theme-blue .card-header { background-color: #3498db; color: white; }
-.theme-blue #fileList .list-group-item.active { background-color: #aed6f1; border-color: #5dade2; color: #000; }
+.theme-blue #fileList .file-list-button { background-color: #eaf2f8; border-color: #aed6f1; color: #1A5276; }
+.theme-blue #fileList .file-list-button:hover { background-color: #d4e6f1; }
+.theme-blue #fileList .file-list-button.active { background-color: #aed6f1; border-color: #5dade2; color: #000; }
 .theme-blue .node.selected { background-color: #aed6f1; }
 .theme-blue .node:hover { background-color: #eaf2f8; }
 .theme-blue .props-table th { background: #eaf2f8; }
@@ -147,7 +332,9 @@ body {
 
 /* Green Theme */
 .theme-green .card-header { background-color: #27AE60; color: white; }
-.theme-green #fileList .list-group-item.active { background-color: #ABEBC6; border-color: #58D68D; color: #000; }
+.theme-green #fileList .file-list-button { background-color: #E8F8F5; border-color: #ABEBC6; color: #145A32; }
+.theme-green #fileList .file-list-button:hover { background-color: #D0E9DC; }
+.theme-green #fileList .file-list-button.active { background-color: #ABEBC6; border-color: #58D68D; color: #000; }
 .theme-green .node.selected { background-color: #ABEBC6; }
 .theme-green .node:hover { background-color: #E8F8F5; }
 .theme-green .props-table th { background: #E8F8F5; }
@@ -159,7 +346,9 @@ body {
 
 /* Gray Theme */
 .theme-gray .card-header { background-color: #566573; color: white; }
-.theme-gray #fileList .list-group-item.active { background-color: #D5D8DC; border-color: #808B96; color: #000; }
+.theme-gray #fileList .file-list-button { background-color: #F4F6F7; border-color: #D5D8DC; color: #212F3C; }
+.theme-gray #fileList .file-list-button:hover { background-color: #E5E8E8; }
+.theme-gray #fileList .file-list-button.active { background-color: #D5D8DC; border-color: #808B96; color: #000; }
 .theme-gray .node.selected { background-color: #D5D8DC; }
 .theme-gray .node:hover { background-color: #F4F6F7; }
 .theme-gray .props-table th { background: #F4F6F7; }
@@ -171,7 +360,9 @@ body {
 
 /* Magenta Theme */
 .theme-magenta .card-header { background-color: #C2185B; color: white; }
-.theme-magenta #fileList .list-group-item.active { background-color: #F8BBD0; border-color: #C2185B; color: #000; }
+.theme-magenta #fileList .file-list-button { background-color: #FCE4EC; border-color: #F8BBD0; color: #880E4F; }
+.theme-magenta #fileList .file-list-button:hover { background-color: #F48FB1; }
+.theme-magenta #fileList .file-list-button.active { background-color: #F8BBD0; border-color: #C2185B; color: #000; }
 .theme-magenta .node.selected { background-color: #F8BBD0; }
 .theme-magenta .node:hover { background-color: #FCE4EC; }
 .theme-magenta .props-table th { background: #FCE4EC; }
@@ -183,7 +374,9 @@ body {
 
 /* Yellow Theme */
 .theme-yellow .card-header { background-color: #FBC02D; color: white; }
-.theme-yellow #fileList .list-group-item.active { background-color: #FFF9C4; border-color: #FBC02D; color: #000; }
+.theme-yellow #fileList .file-list-button { background-color: #FFFDE7; border-color: #FFF9C4; color: #F57F17; }
+.theme-yellow #fileList .file-list-button:hover { background-color: #FFF59D; }
+.theme-yellow #fileList .file-list-button.active { background-color: #FFF9C4; border-color: #FBC02D; color: #000; }
 .theme-yellow .node.selected { background-color: #FFF9C4; }
 .theme-yellow .node:hover { background-color: #FFFDE7; }
 .theme-yellow .props-table th { background: #FFFDE7; }
@@ -195,7 +388,9 @@ body {
 
 /* Turquoise Theme */
 .theme-turquoise .card-header { background-color: #0097A7; color: white; }
-.theme-turquoise #fileList .list-group-item.active { background-color: #B2EBF2; border-color: #0097A7; color: #000; }
+.theme-turquoise #fileList .file-list-button { background-color: #E0F7FA; border-color: #B2EBF2; color: #006064; }
+.theme-turquoise #fileList .file-list-button:hover { background-color: #80DEEA; }
+.theme-turquoise #fileList .file-list-button.active { background-color: #B2EBF2; border-color: #0097A7; color: #000; }
 .theme-turquoise .node.selected { background-color: #B2EBF2; }
 .theme-turquoise .node:hover { background-color: #E0F7FA; }
 .theme-turquoise .props-table th { background: #E0F7FA; }
@@ -207,7 +402,9 @@ body {
 
 /* Red Theme */
 .theme-red .card-header { background-color: #D32F2F; color: white; }
-.theme-red #fileList .list-group-item.active { background-color: #FFCDD2; border-color: #D32F2F; color: #000; }
+.theme-red #fileList .file-list-button { background-color: #FFEBEE; border-color: #FFCDD2; color: #B71C1C; }
+.theme-red #fileList .file-list-button:hover { background-color: #FFCDD2; }
+.theme-red #fileList .file-list-button.active { background-color: #FFCDD2; border-color: #D32F2F; color: #000; }
 .theme-red .node.selected { background-color: #FFCDD2; }
 .theme-red .node:hover { background-color: #FFEBEE; }
 .theme-red .props-table th { background: #FFEBEE; }
@@ -244,11 +441,14 @@ body {
     transition: flex 0.3s ease, width 0.3s ease;
 }
 #file-list-col.collapsed {
-    flex: 0 0 100px !important;
-    width: 100px !important;
+    flex: 0 0 90px !important;
+    width: 90px !important;
 }
 #file-list-col.collapsed .file-list-title,
 #file-list-col.collapsed .card-body {
+    display: none;
+}
+#file-list-col.collapsed .file-name {
     display: none;
 }
 #file-list-col.collapsed .card-header {
@@ -307,6 +507,51 @@ body {
                                         <option value="red">Red</option>
                                     </select>
                                 </div>
+                                <span class="ms-2" title="Hilfe" id="help-icon-btn">
+                                    <i class="bi bi-question-circle" style="font-size: 1.35rem; color: #fff; cursor: pointer;"></i>
+                                </span>
+</main>
+</div>
+</div>
+
+<script>
+// Hilfe aus Markdown-String rendern
+document.addEventListener("DOMContentLoaded", function() {
+    document.getElementById('help-dynamic-content').innerHTML = marked.parse(HILFE_MD);
+});
+document.addEventListener("DOMContentLoaded", function() {
+    const helpIconBtn = document.getElementById('help-icon-btn');
+    const helpPopup = document.getElementById('help-popup');
+    const helpCloseBtn = document.getElementById('help-close-btn');
+    // Popup beim Laden immer ausblenden
+    helpPopup.style.display = 'none';
+
+    // Theme-Unterstützung für Hilfe-Popup
+    function applyHelpPopupTheme(theme) {
+        helpPopup.classList.remove(
+            'theme-default', 'theme-blue', 'theme-green', 'theme-gray',
+            'theme-magenta', 'theme-yellow', 'theme-turquoise', 'theme-red'
+        );
+        helpPopup.classList.add('theme-' + theme);
+    }
+    // Initiales Theme setzen
+    const initialTheme = localStorage.getItem('theme') || 'default';
+    applyHelpPopupTheme(initialTheme);
+
+    // Theme-Wechsel überwachen
+    const themeSelect = document.getElementById('theme-select');
+    themeSelect.addEventListener('change', function() {
+        applyHelpPopupTheme(this.value);
+    });
+
+    helpIconBtn.addEventListener('click', function() {
+        helpPopup.style.display = 'flex';
+    });
+    helpCloseBtn.addEventListener('click', function() {
+        helpPopup.style.display = 'none';
+    });
+});
+</script>
                             </div>
                         </form>        </div>
     </div>
@@ -318,7 +563,7 @@ body {
             <div class="card shadow h-100 d-flex flex-column">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <span class="file-list-title">Folder Files</span>
-                    <button id="sidebar-toggle-btn" class="btn btn-sm btn-outline-light">«</button>
+                    <i id="sidebar-toggle-btn" class="bi bi-layout-sidebar-inset-reverse" style="cursor: pointer; font-size: 1.25rem; color: white;"></i>
                 </div>
                 <div class="card-body d-flex flex-column p-0">
                     <div class="p-2 border-bottom">
@@ -451,6 +696,12 @@ document.addEventListener("DOMContentLoaded", function() {
     const scaleSlider = document.getElementById('scale-slider');
     const scaleValue = document.getElementById('scale-value');
 
+    // Zoomfaktor aus localStorage wiederherstellen
+    const savedZoom = localStorage.getItem('zoomFactor');
+    if (savedZoom) {
+        scaleSlider.value = savedZoom;
+        scaleSlider.dispatchEvent(new Event('input'));
+    }
     scaleSlider.addEventListener('input', function() {
         const scale = parseFloat(this.value);
         const screenshotImg = document.querySelector('.screenshot');
@@ -460,6 +711,7 @@ document.addEventListener("DOMContentLoaded", function() {
             updateElementOverlay();
         }
         scaleValue.textContent = `${scale.toFixed(1)}x`;
+        localStorage.setItem('zoomFactor', scale);
     });
 
     folderSelectBtn.addEventListener('click', () => folderInput.click());
@@ -479,6 +731,14 @@ document.addEventListener("DOMContentLoaded", function() {
         toggleLayout(this.checked);
         localStorage.setItem('sideBySideLayout', this.checked);
     });
+    // Show-Only-Matches-Checkbox aus localStorage wiederherstellen
+    const showOnlyMatchesCheckbox = document.getElementById('showOnlyMatches');
+    const savedShowOnlyMatches = localStorage.getItem('showOnlyMatches') === 'true';
+    showOnlyMatchesCheckbox.checked = savedShowOnlyMatches;
+    showOnlyMatchesCheckbox.addEventListener('change', function() {
+        localStorage.setItem('showOnlyMatches', this.checked);
+        filterTree();
+    });
 
     function toggleLayout(isSideBySide) {
         if (isSideBySide) {
@@ -495,18 +755,28 @@ document.addEventListener("DOMContentLoaded", function() {
 
     function toggleSidebar(collapse) {
         const folderSelectBtn = document.getElementById('folderSelectBtn');
+        const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
         if (collapse) {
             fileListCol.classList.add('collapsed');
             mainContentCol.classList.remove('col-md-10');
             mainContentCol.classList.add('col');
-            sidebarToggleBtn.textContent = '»';
+            sidebarToggleBtn.classList.remove('bi-layout-sidebar-inset-reverse');
+            sidebarToggleBtn.classList.add('bi-layout-sidebar-inset');
             folderSelectBtn.title = 'Select Folder';
+            document.querySelectorAll('#fileList .file-list-button').forEach(item => {
+                const fileName = item.querySelector('.file-name').textContent;
+                item.setAttribute('title', fileName);
+            });
         } else {
             fileListCol.classList.remove('collapsed');
             mainContentCol.classList.remove('col');
             mainContentCol.classList.add('col-md-10');
-            sidebarToggleBtn.textContent = '«';
+            sidebarToggleBtn.classList.remove('bi-layout-sidebar-inset');
+            sidebarToggleBtn.classList.add('bi-layout-sidebar-inset-reverse');
             folderSelectBtn.title = '';
+            document.querySelectorAll('#fileList .file-list-button').forEach(item => {
+                item.removeAttribute('title');
+            });
         }
     }
 
@@ -553,28 +823,41 @@ document.addEventListener("DOMContentLoaded", function() {
             messageText.textContent = 'Select a file to view.';
             initialMessage.classList.remove('d-none');
             viewerContent.classList.add('d-none');
+            const fileListFragment = document.createDocumentFragment();
             xmlFiles.forEach((file, index) => {
-                const listItem = document.createElement('a');
-                listItem.href = "#";
-                listItem.textContent = file.name;
-                listItem.className = 'list-group-item list-group-item-action';
-                listItem.dataset.index = index;
-                listItem.addEventListener('click', handleFileClick);
-                fileList.appendChild(listItem);
+                const button = document.createElement('button');
+                button.className = 'btn btn-outline-secondary w-100 mb-1 d-flex align-items-center gap-2 file-list-button';
+                button.dataset.index = index;
+                
+                const icon = document.createElement('i');
+                icon.className = 'bi bi-file-earmark-code';
+                
+                const text = document.createElement('span');
+                text.className = 'file-name flex-grow-1 text-truncate text-start';
+                text.textContent = file.name;
+                
+                button.appendChild(icon);
+                button.appendChild(text);
+                button.addEventListener('click', handleFileClick);
+                fileListFragment.appendChild(button);
             });
+            fileList.appendChild(fileListFragment);
         } else {
             messageText.textContent = 'No XML files found. Please select another folder.';
             initialMessage.classList.remove('d-none');
             viewerContent.classList.add('d-none');
         }
+        // After adding new file buttons, update their state if sidebar is collapsed
+        toggleSidebar(fileListCol.classList.contains('collapsed'));
     }
 
     function handleFileClick(event) {
         event.preventDefault();
-        document.querySelectorAll('.list-group-item').forEach(item => item.classList.remove('active'));
-        event.target.classList.add('active');
+        const clickedButton = event.currentTarget;
+        document.querySelectorAll('.file-list-button').forEach(item => item.classList.remove('active'));
+        clickedButton.classList.add('active');
 
-        const fileIndex = event.target.dataset.index;
+        const fileIndex = clickedButton.dataset.index;
         const file = xmlFiles[fileIndex];
         
         const reader = new FileReader();
@@ -607,9 +890,13 @@ document.addEventListener("DOMContentLoaded", function() {
                         const scaleX = container.clientWidth / screenshotImg.naturalWidth;
                         const scaleY = container.clientHeight / screenshotImg.naturalHeight;
                         const initialScale = Math.min(scaleX, scaleY, 1);
-                        
                         const scaleSlider = document.getElementById('scale-slider');
-                        scaleSlider.value = initialScale;
+                        const savedZoom = localStorage.getItem('zoomFactor');
+                        if (savedZoom) {
+                            scaleSlider.value = savedZoom;
+                        } else {
+                            scaleSlider.value = initialScale;
+                        }
                         scaleSlider.dispatchEvent(new Event('input'));
                     }
                 };
@@ -694,10 +981,25 @@ document.addEventListener("DOMContentLoaded", function() {
         }
 
         if (childElements.length > 0) {
+            // Standardmäßig sind alle Knoten ausgeklappt, daher Icon '-'.
             html += `<span class="toggle">-</span><span class="node" data-props='${dataProps}' data-xml='${dataXml}'>${escapeHtml(label)}</span>`;
             html += `<ul class="nested">`;
             childElements.forEach(child => { html += buildTreeHtmlJS(child); });
             html += `</ul>`;
+// Toggle-Icon dynamisch ändern, je nach collapsed-Status
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('toggle')) {
+        const li = e.target.closest('li');
+        if (li) {
+            const nested = li.querySelector('.nested');
+            if (nested) {
+                nested.classList.toggle('collapsed');
+                // Icon setzen
+                e.target.textContent = nested.classList.contains('collapsed') ? '+' : '-';
+            }
+        }
+    }
+});
         } else {
             html += `<span class="node" data-props='${dataProps}' data-xml='${dataXml}'>${escapeHtml(label)}</span>`;
         }
@@ -758,6 +1060,19 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         }
     });
+
+        // Toggle expand/collapse on click of the toggle icon
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('toggle')) {
+                const li = e.target.closest('li');
+                if (li) {
+                    const nested = li.querySelector('.nested');
+                    if (nested) {
+                        nested.classList.toggle('collapsed');
+                    }
+                }
+            }
+        });
 
     document.addEventListener('contextmenu', e => {
         const node = e.target.closest('.node');
