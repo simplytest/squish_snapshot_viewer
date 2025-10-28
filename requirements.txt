@@ -1,16 +1,1 @@
-# Requirements for Squish XML Viewer Desktop Application
-# Core dependency for creating desktop application with webview
-pywebview>=4.0.0
-
-# Optional: For better packaging
-# pyinstaller>=5.0.0  # For creating standalone executables
-
-# Python standard library modules used (no installation needed):
-# - xml.etree.ElementTree
-# - base64  
-# - html
-# - os
-# - sys
-# - tempfile
-# - threading
-# - webbrowser (fallback)
+# This project has no external dependencies.

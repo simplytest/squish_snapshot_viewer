@@ -1,9 +1,804 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Squish Snapshot Viewer</title>
+<style>
+/* squish_xml_viewer.css - Styles for the XML viewer */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, Helvetica, sans-serif; 
+    margin: 0; 
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+.header {
+    padding: 10px; 
+    background: #5dade2; /* Light Blue */
+    color: white; 
+    display: flex; 
+    align-items: center; 
+    gap: 15px;
+    flex-shrink: 0;
+}
+
+.header h1 {
+    margin: 0; 
+    font-size: 18px; 
+    color: white;
+}
+
+.header-search-group {
+    display: flex; 
+    align-items: center; 
+    gap: 10px;
+}
+
+.header-search-group label {
+    font-size: 12px; 
+    color: #ecf0f1; 
+    white-space: nowrap;
+}
+
+.header-search-group input, .header-search-group select {
+    padding: 4px; 
+    border: none; 
+    border-radius: 3px; 
+    font-size: 12px;
+}
+
+.header-search-group .search-container {
+    position: relative;
+}
+
+.header .clear-btn {
+    color: #666; 
+    background: white;
+}
+
+.main-container {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+}
+
+.file-sidebar {
+    width: 350px; /* Increased width */
+    border-right: 1px solid #ddd;
+    display: flex;
+    flex-direction: column;
+}
+
+.file-sidebar-header {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+    background: #f9f9f9;
+}
+
+#folderSelectBtn {
+    width: 100%;
+    padding: 8px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+}
+#folderSelectBtn:hover {
+    background-color: #2980b9;
+}
+
+.file-list {
+    list-style: none;
+    padding: 10px;
+    margin: 0;
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-content: flex-start;
+}
+
+.file-list-item {
+    flex-basis: calc(50% - 10px);
+    flex-grow: 1;
+    margin: 5px;
+    padding: 10px;
+    cursor: pointer;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 14px;
+    background: #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    word-wrap: break-word;
+    transition: all 0.2s ease;
+}
+
+.file-list-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.file-list-item.selected {
+    background: #aed6f1; /* Lighter Blue */
+    font-weight: bold;
+    border-color: #5dade2; /* Light Blue */
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.viewer-container {
+    display: flex;
+    flex: 1;
+    height: 100%;
+}
+
+#initial-message {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #888;
+    font-size: 18px;
+}
+
+.container {
+    display: none; 
+    flex: 1;
+    height: 100%;
+}
+
+.sidebar {
+    width: 360px; 
+    border-right: 1px solid #ddd; 
+    display: flex; 
+    flex-direction: column;
+    height: 100%;
+}
+
+.sidebar-content {
+    flex: 1; 
+    padding: 10px; 
+    overflow: auto;
+}
+
+.right-panel {
+    flex: 1; 
+    display: flex; 
+    flex-direction: column;
+    height: 100%;
+}
+
+.screenshot-panel {
+    height: 40%;
+    border-bottom: 1px solid #ddd; 
+    flex-shrink: 0;
+    position: relative;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+}
+
+.screenshot-container {
+    position: relative;
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+    overflow: hidden;
+}
+
+.screenshot {
+    max-width: 100%; 
+    max-height: 100%;
+    border: 1px solid #ccc; 
+    object-fit: contain;
+}
+
+.properties-panel {
+    flex: 1; 
+    display: flex; 
+    flex-direction: column; 
+    min-height: 0;
+}
+
+.properties-content {
+    flex: 1; 
+    padding: 10px; 
+    overflow: auto; 
+    min-height: 0;
+}
+
+.panel-header {
+    padding: 10px; 
+    border-bottom: 1px solid #eee; 
+    background: #f9f9f9;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.panel-header h3 {
+    margin: 0;
+    font-size: 16px;
+    color: #333;
+}
+
+#screenshot-path {
+    font-size: 12px;
+    margin: 0;
+    color: #666;
+}
+
+/* Tree View Styles */
+.tree {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.tree ul {
+    list-style-type: none;
+    padding-left: 20px;
+}
+
+.tree li {
+    margin: 5px 0;
+}
+
+.node {
+    cursor: pointer;
+    padding: 2px 5px;
+    border-radius: 3px;
+    display: inline-block;
+}
+
+.node:hover {
+    background: #eaf2f8; /* Very Light Blue */
+}
+
+.node.selected {
+    background: #aed6f1; /* Lighter Blue */
+}
+
+.props {
+    white-space: pre-wrap; 
+    font-family: monospace; 
+    background: #f7f7f7; 
+    padding: 8px; 
+    border-radius: 4px; 
+    max-height: 300px; 
+    overflow: auto;
+}
+
+.props-table {
+    width: 100%; 
+    border-collapse: collapse; 
+    font-size: 12px;
+}
+
+.props-table th, .props-table td {
+    border: 1px solid #ddd; 
+    padding: 4px 8px; 
+    text-align: left;
+    position: relative;
+}
+
+.props-table th {
+    background: #eaf2f8; /* Very Light Blue */
+    font-weight: bold;
+    cursor: pointer;
+    position: relative;
+}
+
+.props-table th.sort-asc::after {
+    content: ' \25B2';
+    color: #3498db;
+}
+
+.props-table th.sort-desc::after {
+    content: ' \25BC';
+    color: #3498db;
+}
+
+.props-table tr:nth-child(even) {
+    background: #f9f9f9;
+}
+
+.props-table td:first-child {
+    font-weight: bold; 
+    color: #666; 
+    max-width: 150px; 
+    word-break: break-word;
+}
+
+.props-table td:last-child {
+    font-family: monospace; 
+    max-width: 200px; 
+    word-break: break-all;
+}
+
+.props-table .group-header {
+    background: #d4e6f1; /* Light Blue */
+}
+
+.props-table .group-header td {
+    font-weight: bold; 
+    color: #2c3e50; 
+    border-bottom: 2px solid #5dade2; /* Light Blue */
+}
+
+.props-table .group-item {
+    background: #f8fcff;
+}
+
+.props-table .group-item td:first-child {
+    padding-left: 20px; 
+    font-style: italic; 
+    color: #34495e;
+}
+
+.props-table tr:hover {
+    background: #eaf2f8; /* Very Light Blue */
+    cursor: pointer;
+}
+
+.props-table tr.selected {
+    background: #d4e6f1; /* Light Blue */
+}
+
+.props-table tr.selected td {
+    background: transparent;
+}
+
+.context-menu {
+    position: absolute; 
+    background: white; 
+    border: 1px solid #ccc; 
+    border-radius: 4px; 
+    padding: 5px 0; 
+    box-shadow: 2px 2px 10px rgba(0,0,0,0.3); 
+    z-index: 1000; 
+    display: none;
+}
+
+.context-menu-item {
+    padding: 5px 15px; 
+    cursor: pointer;
+}
+
+.context-menu-item:hover {
+    background: #f0f0f0;
+}
+
+.search-container {
+    position: relative; 
+    width: 100%;
+}
+
+.search-container input {
+    width: 100%; 
+    box-sizing: border-box;
+}
+
+.clear-btn {
+    position: absolute; 
+    right: 5px; 
+    top: 50%; 
+    transform: translateY(-50%); 
+    background: none; 
+    border: none; 
+    font-size: 16px; 
+    cursor: pointer; 
+    color: #666; 
+    padding: 0; 
+    width: 20px; 
+    height: 20px; 
+    display: none;
+}
+
+.clear-btn:hover {
+    color: #333; 
+    background: #f0f0f0; 
+    border-radius: 50%;
+}
+
+.search-container input:not(:placeholder-shown) + .clear-btn {
+    display: block;
+}
+
+.element-overlay {
+    position: absolute;
+    border: 3px solid #5dade2; /* Light Blue */
+    background: rgba(93, 173, 226, 0.1); /* Light Blue transparent */
+    pointer-events: none;
+    z-index: 10;
+    animation: pulsate 1s infinite;
+}
+
+@keyframes pulsate {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.02);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+mark {
+    background-color: yellow;
+    padding: 0;
+}
+
+.toggle {
+    cursor: pointer;
+    margin-right: 5px;
+    font-weight: bold;
+    display: inline-block;
+    width: 15px;
+    text-align: center;
+    user-select: none;
+}
+
+.nested {
+}
+
+.nested.collapsed {
+    display: none;
+}
+
+.node.highlight {
+    background-color: #f0ad4e;
+}
+
+#clearHighlight {
+    padding: 2px 8px;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    color: #333;
+    margin-left: 10px;
+}
+
+#clearHighlight:hover {
+    background-color: #e0e0e0;
+}
+
+.context-menu-item.disabled-menu-item {
+    color: #aaa;
+    cursor: not-allowed;
+    background-color: #f0f0f0;
+}
+
+.context-menu-item.disabled-menu-item:hover {
+    background: #f0f0f0;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Squish Snapshot Viewer</h1>
+  <div class="header-search-group">
+    <label>Tree:</label>
+    <div class="search-container">
+      <input id="treeSearch" placeholder="Search tree..." style="width:150px; padding:4px; padding-right:25px;">
+      <button id="clearTreeSearch" class="clear-btn" onclick="clearTreeSearch()" title="Clear search">&times;</button>
+    </div>
+  </div>
+  <div class="header-search-group">
+    <label>Properties:</label>
+    <div class="search-container">
+      <input id="propsSearch" placeholder="Search properties..." style="width:150px; padding:4px; padding-right:25px;">
+      <button id="clearPropsSearch" class="clear-btn" onclick="clearPropsSearch()" title="Clear search">&times;</button>
+    </div>
+  </div>
+  <div class="header-search-group">
+    <label>Prop Values:</label>
+    <div class="search-container">
+      <input id="propertyValueSearch" placeholder="Search by property value..." style="width:150px; padding:4px; padding-right:25px;">
+      <button id="clearPropertyValueSearch" class="clear-btn" onclick="clearPropertyValueSearch()" title="Clear search">&times;</button>
+    </div>
+  </div>
+  <div class="header-search-group">
+    <label>Sort by:</label>
+    <select id="sortColumn" onchange="refreshProperties()" style="padding:4px;">
+      <option value="Property">Property</option>
+      <option value="Value">Value</option>
+    </select>
+    <select id="sortOrder" onchange="refreshProperties()" style="padding:4px;">
+      <option value="asc">Ascending</option>
+      <option value="desc">Descending</option>
+      <option value="none">None</option>
+    </select>
+  </div>
+  <div class="header-search-group">
+    <input type="checkbox" id="showOnlyMatches">
+    <label for="showOnlyMatches" style="color: white; font-size: 12px;">Show only matching elements</label>
+  </div>
+</div>
+
+<div class="main-container">
+    <div class="file-sidebar">
+        <div class="file-sidebar-header">
+            <input type="file" id="folderInput" webkitdirectory style="display: none;" />
+            <button id="folderSelectBtn">Select Snapshot Folder</button>
+        </div>
+        <ul class="file-list" id="fileList"></ul>
+    </div>
+    <div class="viewer-container">
+        <div id="initial-message">Select a folder to see snapshot files.</div>
+        <div class="container" id="viewerContent">
+            <div class="sidebar">
+                <div class="sidebar-header panel-header">
+                <h3>Object Tree</h3>
+                </div>
+                <div class="sidebar-content">
+                <div id="treeContainer"></div>
+                </div>
+            </div>
+            <div class="right-panel">
+                <div class="screenshot-panel">
+                    <div class="panel-header">
+                        <h3>Squish Snapshot</h3>
+                        <p id="screenshot-path" class="props"></p>
+                    </div>
+                    <div class="screenshot-container" id="screenshotContainer">
+                    </div>
+                </div>
+                <div class="properties-panel">
+                    <div class="properties-header panel-header">
+                        <h3>Selected Node Properties</h3>
+                    </div>
+                    <div class="properties-content">
+                        <div id="props">Click a node in the tree to see its properties here.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Context Menus -->
+<div id="treeContextMenu" class="context-menu">
+  <div class="context-menu-item" data-type="realname">Copy real name</div>
+  <div class="context-menu-item" data-type="copy-as-object">Copy as BasePage object</div>
+  <div class="context-menu-item" data-type="class">Copy class name</div>
+  <div class="context-menu-item" data-type="objectName">Copy object name</div>
+</div>
+
+<div id="propsContextMenu" class="context-menu">
+  <div class="context-menu-item" data-type="propValue">Copy property value</div>
+  <div class="context-menu-item" data-type="propName">Copy property name</div>
+</div>
+
+<script>
+// --- Start of New All-in-One Viewer Logic ---
+
+let xmlFiles = [];
+// This would be loaded from a whitelist.txt file in a real scenario.
+// For this static version, it's hardcoded. A future improvement could be to select this file too.
+var attributeWhitelist = ["name", "text", "title", "type", "unnamed", "visible", "windowTitle", "simplifiedType"];
+
+document.addEventListener("DOMContentLoaded", function() {
+    const folderSelectBtn = document.getElementById('folderSelectBtn');
+    const folderInput = document.getElementById('folderInput');
+    const fileList = document.getElementById('fileList');
+    const initialMessage = document.getElementById('initial-message');
+    const viewerContent = document.getElementById('viewerContent');
+
+    folderSelectBtn.addEventListener('click', () => folderInput.click());
+    folderInput.addEventListener('change', handleFolderSelection);
+
+    function handleFolderSelection(event) {
+        const files = event.target.files;
+        xmlFiles = Array.from(files).filter(file => file.name.endsWith('.xml'));
+        
+        fileList.innerHTML = ''; // Clear previous list
+        
+        if (xmlFiles.length > 0) {
+            initialMessage.textContent = 'Select a file from the list to view it.';
+            xmlFiles.forEach((file, index) => {
+                const listItem = document.createElement('li');
+                listItem.textContent = file.name;
+                listItem.className = 'file-list-item';
+                listItem.dataset.index = index;
+                listItem.addEventListener('click', handleFileClick);
+                fileList.appendChild(listItem);
+            });
+        } else {
+            initialMessage.textContent = 'No XML files found in the selected directory.';
+        }
+    }
+
+    function handleFileClick(event) {
+        // Highlight selected file
+        document.querySelectorAll('.file-list-item').forEach(item => item.classList.remove('selected'));
+        event.target.classList.add('selected');
+
+        const fileIndex = event.target.dataset.index;
+        const file = xmlFiles[fileIndex];
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const xmlContent = e.target.result;
+            generateViewerFromXML(xmlContent, file.name);
+        };
+        reader.readAsText(file);
+    }
+
+    function generateViewerFromXML(xmlString, fileName) {
+        try {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlString, "application/xml");
+
+            // Check for parsing errors
+            const parseError = xmlDoc.querySelector("parsererror");
+            if (parseError) {
+                console.error("Error parsing XML:", parseError);
+                alert("Error parsing XML file. Check console for details.");
+                return;
+            }
+            
+            // --- 1. Extract Screenshot ---
+            const imageElem = xmlDoc.querySelector('image[type="PNG"]');
+            const screenshotContainer = document.getElementById('screenshotContainer');
+            if (imageElem && imageElem.textContent) {
+                screenshotContainer.innerHTML = `<img class='screenshot' src='data:image/png;base64,${imageElem.textContent.trim()}'>`;
+            } else {
+                screenshotContainer.innerHTML = "<p><i>No screenshot found.</i></p>";
+            }
+
+            // --- 2. Build HTML Tree ---
+            const treeContainer = document.getElementById('treeContainer');
+            const rootElement = xmlDoc.querySelector("element");
+            if (rootElement) {
+                const treeHtml = buildTreeHtmlJS(rootElement);
+                treeContainer.innerHTML = `<ul class='tree'>${treeHtml}</ul>`;
+            } else {
+                treeContainer.innerHTML = "<p><i>No object structure found.</i></p>";
+            }
+
+            // --- 3. Update UI ---
+            document.getElementById('screenshot-path').textContent = fileName;
+            document.title = `Squish Snapshot Viewer - ${fileName}`;
+            
+            // Show viewer and hide initial message
+            initialMessage.style.display = 'none';
+            viewerContent.style.display = 'flex';
+
+            // Reset properties view
+            document.getElementById("props").innerHTML = 'Click a node in the tree to see its properties here.';
+            
+            // Re-initialize or update parts of the old script that depend on new content
+            resetViewerState();
+
+        } catch (e) {
+            console.error("Failed to generate viewer:", e);
+            alert("An error occurred while processing the file. Check console for details.");
+        }
+    }
+
+    function buildTreeHtmlJS(node) {
+        let properties = {};
+        // Attributes
+        for (const attr of node.attributes) {
+            properties[attr.name] = attr.value;
+        }
+
+        // Child text nodes
+        for (const child of node.children) {
+            if (child.children.length === 0 && child.textContent) {
+                 if (child.tagName === 'superclass') {
+                    let classes = Array.from(child.querySelectorAll("class")).map(c => c.textContent).filter(Boolean);
+                    if (classes.length > 0) properties["superclasses"] = classes.join(" > ");
+                } else {
+                    properties[child.tagName] = child.textContent.trim();
+                }
+            }
+        }
+        
+        // Special handling for geometry
+        const geomElem = node.querySelector("abstractProperties > geometry");
+        if (geomElem) {
+            for(const coord of ["x", "y", "width", "height"]) {
+                const coordElem = geomElem.querySelector(coord);
+                if (coordElem && coordElem.textContent) {
+                    properties[`geometry_${coord}`] = coordElem.textContent;
+                }
+            }
+        }
+        
+        // Special handling for visual properties
+        const visualElem = node.querySelector("abstractProperties > visual");
+        if (visualElem) {
+            for (const attr of visualElem.attributes) {
+                properties[`visual_${attr.name}`] = attr.value;
+            }
+        }
+
+        // Special handling for properties
+        const propsElem = node.querySelector("properties");
+        if (propsElem) {
+            for (const prop of propsElem.querySelectorAll("property")) {
+                const propName = prop.getAttribute("name");
+                const stringElem = prop.querySelector("string");
+                if (propName) {
+                    properties[propName] = stringElem && stringElem.textContent ? stringElem.textContent : "";
+                }
+            }
+        }
+
+        let label = properties.objectName || properties.simplifiedType || node.tagName;
+
+        const dataProps = escapeHtml(JSON.stringify(properties));
+        const xmlSnippet = new XMLSerializer().serializeToString(node);
+        const dataXml = escapeHtml(xmlSnippet);
+
+        let html = `<li>`;
+        const children = Array.from(node.children).filter(c => c.tagName === 'children' || c.tagName === 'element');
+        let childElements = [];
+        if (children.length > 0 && children[0].tagName === 'children') {
+            childElements = Array.from(children[0].children).filter(c => c.tagName === 'element');
+        } else {
+            childElements = children.filter(c => c.tagName === 'element');
+        }
+
+        if (childElements.length > 0) {
+            html += `<span class="toggle">-</span><span class="node" data-props="${dataProps}" data-xml="${dataXml}">${escapeHtml(label)}</span>`;
+            html += `<ul class="nested">`;
+            childElements.forEach(child => {
+                html += buildTreeHtmlJS(child);
+            });
+            html += `</ul>`;
+        } else {
+            html += `<span class="node" data-props="${dataProps}" data-xml="${dataXml}">${escapeHtml(label)}</span>`;
+        }
+
+        html += `</li>`;
+        return html;
+    }
+    
+    function resetViewerState() {
+        currentSelectedNode = null;
+        currentPropsData = null;
+        currentContextNode = null;
+        screenshotGeometry = null;
+        // Clear any previous overlays
+        const existingOverlay = document.getElementById('elementOverlay');
+        if (existingOverlay) {
+            existingOverlay.remove();
+        }
+    }
+
+});
+
+// --- End of New Logic ---
+
+
+// --- Start of Original viewer_scripts.js (with modifications) ---
+
 function filterTreeByPropertyValue() {
     var searchTerm = document.getElementById('propertyValueSearch').value.toLowerCase();
     var treeContainer = document.getElementById('treeContainer');
     var allNodes = treeContainer.querySelectorAll('li');
 
-    // First, remove all highlighting
     var allSpans = treeContainer.querySelectorAll('.node');
     allSpans.forEach(function(span) {
         span.style.backgroundColor = '';
@@ -19,18 +814,14 @@ function filterTreeByPropertyValue() {
         });
         return;
     }
-    // Hide all nodes first
     allNodes.forEach(function(node) {
         node.style.display = 'none';
     });
-    // Show nodes where any property value matches
     var nodeSpans = treeContainer.querySelectorAll('.node');
     nodeSpans.forEach(function(span) {
         var props = span.getAttribute('data-props') || '{}';
         try {
-            var textarea = document.createElement('textarea');
-            textarea.innerHTML = props;
-            var propsObj = eval('(' + textarea.value + ')');
+            var propsObj = JSON.parse(props);
             var found = false;
             for (var key in propsObj) {
                 if (propsObj.hasOwnProperty(key)) {
@@ -43,7 +834,6 @@ function filterTreeByPropertyValue() {
             }
             if (found) {
                 span.style.backgroundColor = 'yellow';
-                // Show this node and all its parents
                 var current = span.closest('li');
                 while (current) {
                     current.style.display = '';
@@ -73,17 +863,15 @@ function clearPropertyValueSearch() {
     filterTreeByPropertyValue();
     toggleClearButton('propertyValueSearch', 'clearPropertyValueSearch');
 }
-// squish_xml_viewer.js - JavaScript functionality for the XML viewer
 
 function escapeRegExp(string) {
-  return string.replace(/[.*+?^${}()|[\/]/g, '\$&'); // $& means the whole matched string
+  return string.replace(/[.*+?^${}()|[\/]/g, '\$&');
 }
 
 function highlightText(text, searchTerms) {
     if (!searchTerms || searchTerms.length === 0) {
         return text;
     }
-    // remove empty strings
     searchTerms = searchTerms.filter(Boolean);
     if (searchTerms.length === 0) {
         return text;
@@ -95,32 +883,25 @@ function highlightText(text, searchTerms) {
 
 function formatPropertiesAsTable(propsStr, searchTerm, highlightTerms) {
     try {
-        // Decode HTML entities first
-        var textarea = document.createElement('textarea');
-        textarea.innerHTML = propsStr;
-        var decodedStr = textarea.value;
-        
-        var props = eval("(" + decodedStr + ")");
+        var props = JSON.parse(propsStr);
         if (typeof props !== 'object' || props === null) {
             return "<p>No properties available</p>";
         }
         
         searchTerm = searchTerm || "";
         
-        // Group properties hierarchically
         var groups = {};
         var standalone = {};
         
         for (var key in props) {
             if (props.hasOwnProperty(key)) {
                 var parts = key.split('_');
-                if (parts.length > 1) {
+                if (parts.length > 1 && ['geometry', 'visual'].includes(parts[0])) {
                     var groupName = parts[0];
                     var propName = parts.slice(1).join('_');
                     if (!groups[groupName]) groups[groupName] = {};
                     groups[groupName][propName] = props[key];
                 } else if (key === 'superclasses') {
-                    // Split superclasses into individual items
                     if (!groups['superclasses']) groups['superclasses'] = {};
                     var classes = props[key].split(' > ');
                     for (var i = 0; i < classes.length; i++) {
@@ -135,7 +916,6 @@ function formatPropertiesAsTable(propsStr, searchTerm, highlightTerms) {
         var sortColumn = document.getElementById('sortColumn').value;
         var sortDirection = document.getElementById('sortOrder').value;
         
-        // Sort function
         function sortKeys(obj) {
             var keys = Object.keys(obj);
             if (sortDirection === 'asc') {
@@ -143,7 +923,6 @@ function formatPropertiesAsTable(propsStr, searchTerm, highlightTerms) {
             } else if (sortDirection === 'desc') {
                 keys.sort().reverse();
             }
-            // 'none' = no sorting, keep original order
             return keys;
         }
         
@@ -153,14 +932,12 @@ function formatPropertiesAsTable(propsStr, searchTerm, highlightTerms) {
         table += "<th class='" + (sortColumn === 'Value' && sortDirection !== 'none' ? 'sort-' + sortDirection : '') + "'>Value</th>";
         table += "</tr></thead><tbody>";
         
-        // Filter and add standalone properties first (sorted)
         var standaloneKeys = sortKeys(standalone);
         for (var i = 0; i < standaloneKeys.length; i++) {
             var key = standaloneKeys[i];
             var value = standalone[key];
             if (value === null || value === undefined) value = "";
             
-            // Apply search filter
             if (searchTerm === "" || 
                 key.toLowerCase().includes(searchTerm) || 
                 value.toString().toLowerCase().includes(searchTerm)) {
@@ -170,14 +947,12 @@ function formatPropertiesAsTable(propsStr, searchTerm, highlightTerms) {
             }
         }
         
-        // Filter and add grouped properties with hierarchy (sorted groups)
         var groupKeys = sortKeys(groups);
         for (var i = 0; i < groupKeys.length; i++) {
             var groupName = groupKeys[i];
             var groupHasMatches = false;
             var groupContent = "";
             
-            // Sort properties within each group and check for matches
             var groupPropKeys = sortKeys(groups[groupName]);
             for (var j = 0; j < groupPropKeys.length; j++) {
                 var propName = groupPropKeys[j];
@@ -185,7 +960,6 @@ function formatPropertiesAsTable(propsStr, searchTerm, highlightTerms) {
                 if (value === null || value === undefined) value = "";
                 var displayName = propName.replace('level_', 'inheritance_');
                 
-                // Apply search filter
                 if (searchTerm === "" || 
                     groupName.toLowerCase().includes(searchTerm) ||
                     displayName.toLowerCase().includes(searchTerm) || 
@@ -197,7 +971,6 @@ function formatPropertiesAsTable(propsStr, searchTerm, highlightTerms) {
                 }
             }
             
-            // Only add group if it has matches
             if (groupHasMatches) {
                 var highlightedGroupName = highlightText(groupName, highlightTerms);
                 table += "<tr class='group-header' data-group='" + groupName + "'><td colspan='2'><span class='toggle'>-</span><strong>" + highlightedGroupName + "</strong></td></tr>";
@@ -207,16 +980,13 @@ function formatPropertiesAsTable(propsStr, searchTerm, highlightTerms) {
         
         table += "</tbody></table>";
         
-        // Add click handlers to table rows after table is created
         setTimeout(function() {
             var tableRows = document.querySelectorAll('.props-table tr:not(.group-header)');
             tableRows.forEach(function(row) {
                 row.addEventListener('click', function() {
-                    // Remove selection from all rows
                     document.querySelectorAll('.props-table tr').forEach(function(r) {
                         r.classList.remove('selected');
                     });
-                    // Add selection to clicked row
                     this.classList.add('selected');
                 });
             });
@@ -237,13 +1007,12 @@ function formatPropertiesAsTable(propsStr, searchTerm, highlightTerms) {
         
         return table;
     } catch(e) {
+        console.error("Error formatting properties table", e);
         return "<p class='props'>" + propsStr + "</p>";
     }
 }
 
-// Global variables
 var currentSelectedNode = null;
-var originalTreeHTML = "";
 var currentPropsData = null;
 var currentContextNode = null;
 var currentContextPropName = null;
@@ -260,7 +1029,6 @@ function refreshProperties() {
 }
 
 function updateElementOverlay() {
-    // Remove existing overlay
     var existingOverlay = document.getElementById('elementOverlay');
     if (existingOverlay) {
         existingOverlay.remove();
@@ -270,29 +1038,20 @@ function updateElementOverlay() {
     
     var props = currentSelectedNode.getAttribute("data-props") || "{}";
     try {
-        var textarea = document.createElement('textarea');
-        textarea.innerHTML = props;
-        var decodedStr = textarea.value;
-        var propsObj = eval("(" + decodedStr + ")");
+        var propsObj = JSON.parse(props);
         
-        // Check if element has geometry properties
         var elemX = propsObj['geometry_x'];
         var elemY = propsObj['geometry_y'];
         var elemWidth = propsObj['geometry_width'];
         var elemHeight = propsObj['geometry_height'];
         
         if (elemX !== undefined && elemY !== undefined && elemWidth !== undefined && elemHeight !== undefined) {
-            // Get screenshot geometry (assume first element or root has the screenshot dimensions)
             if (!screenshotGeometry) {
-                // Try to find screenshot geometry from the first element with geometry
                 var allNodes = document.querySelectorAll('.node');
                 for (var i = 0; i < allNodes.length; i++) {
                     var nodeProps = allNodes[i].getAttribute("data-props") || "{}";
                     try {
-                        var nodeTextarea = document.createElement('textarea');
-                        nodeTextarea.innerHTML = nodeProps;
-                        var nodeDecoded = nodeTextarea.value;
-                        var nodePropsObj = eval("(" + nodeDecoded + ")");
+                        var nodePropsObj = JSON.parse(nodeProps);
                         if (nodePropsObj['geometry_x'] !== undefined) {
                             screenshotGeometry = {
                                 x: parseInt(nodePropsObj['geometry_x']) || 0,
@@ -303,7 +1062,7 @@ function updateElementOverlay() {
                     } catch(e) {}
                 }
                 if (!screenshotGeometry) {
-                    screenshotGeometry = {x: 0, y: 0}; // Default fallback
+                    screenshotGeometry = {x: 0, y: 0};
                 }
             }
             
@@ -325,24 +1084,20 @@ function drawElementOverlay(x, y, width, height) {
     
     if (!screenshotImg || !container) return;
     
-    // Get actual displayed image dimensions
     var imgRect = screenshotImg.getBoundingClientRect();
     var containerRect = container.getBoundingClientRect();
     
-    // Calculate scale factor between actual image and displayed image
     var scaleX = imgRect.width / screenshotImg.naturalWidth;
     var scaleY = imgRect.height / screenshotImg.naturalHeight;
     
     var offsetX = imgRect.left - containerRect.left;
     var offsetY = imgRect.top - containerRect.top;
 
-    // Calculate overlay position and size
-    var overlayX = (x * scaleX) + offsetX - 2; // 2px left
-    var overlayY = (y * scaleY) + offsetY - 2; // 2px up
+    var overlayX = (x * scaleX) + offsetX - 2;
+    var overlayY = (y * scaleY) + offsetY - 2;
     var overlayWidth = width * scaleX;
     var overlayHeight = height * scaleY;
     
-    // Create overlay element
     var overlay = document.createElement('div');
     overlay.id = 'elementOverlay';
     overlay.className = 'element-overlay';
@@ -369,21 +1124,16 @@ function filterAndDisplayProperties() {
 }
 
 function filterTree(nodesToDisplay = null) {
-    console.log("filterTree called with nodesToDisplay:", nodesToDisplay);
     var searchTerm = document.getElementById('treeSearch').value.toLowerCase();
     var treeContainer = document.getElementById('treeContainer');
     var showOnlyMatchesChecked = document.getElementById('showOnlyMatches').checked;
-    console.log("showOnlyMatchesChecked:", showOnlyMatchesChecked);
 
-    // First, remove all highlighting
     var allSpans = treeContainer.querySelectorAll('.node');
     allSpans.forEach(function(span) {
         span.style.backgroundColor = '';
     });
 
-    // Reset all nodes to visible initially
     var allNodes = treeContainer.querySelectorAll('li');
-    console.log("Total li nodes:", allNodes.length);
     allNodes.forEach(function(node) {
         node.style.display = '';
     });
@@ -392,13 +1142,10 @@ function filterTree(nodesToDisplay = null) {
         ul.style.display = '';
     });
 
-    // Determine the set of nodes to consider for display
     var nodesToProcess = [];
     if (nodesToDisplay && nodesToDisplay.length > 0) {
-        // If specific nodes are provided (e.g., from screenshot click)
         nodesToProcess = nodesToDisplay;
     } else if (searchTerm !== '') {
-        // If text search term is present
         var nodeSpans = treeContainer.querySelectorAll('.node');
         nodeSpans.forEach(function(span) {
             if (span.textContent.toLowerCase().includes(searchTerm)) {
@@ -406,25 +1153,17 @@ function filterTree(nodesToDisplay = null) {
             }
         });
     } else {
-        // No specific nodes and no search term, so all nodes should remain visible (already reset above)
-        console.log("No nodes to process, returning.");
         return;
     }
-    console.log("nodesToProcess:", nodesToProcess);
 
-    // Apply filtering based on showOnlyMatchesChecked
     if (showOnlyMatchesChecked && (nodesToProcess.length > 0 || searchTerm !== '')) {
-        console.log("showOnlyMatchesChecked is true, hiding all nodes.");
-        // If showOnlyMatches is checked and there are nodes to process or a search term,
-        // hide all nodes first, then show only the matching ones and their parents.
         allNodes.forEach(function(node) {
             node.style.display = 'none';
         });
     }
 
-    // Show the nodes that match the criteria and their parents
     nodesToProcess.forEach(function(nodeSpan) {
-        nodeSpan.style.backgroundColor = 'yellow'; // Highlight the node
+        nodeSpan.style.backgroundColor = 'yellow';
         var current = nodeSpan.closest('li');
         while (current) {
             current.style.display = '';
@@ -471,40 +1210,33 @@ function clearPropsSearch() {
     toggleClearButton('propsSearch', 'clearPropsSearch');
 }
 
-// Context menu functions
 function copyToClipboard(type) {
-    // Check if the clicked item is disabled
     var contextMenuItem = event.target.closest('.context-menu-item');
     if (contextMenuItem && contextMenuItem.classList.contains('disabled-menu-item')) {
-        return; // Do nothing if disabled
+        return;
     }
 
     var textToCopy = "";
-    var what = "";
 
     if (type === 'realname' || type === 'class' || type === 'objectName') {
-        what = type;
         if (currentContextNode) {
             var props = currentContextNode.getAttribute("data-props") || "{}";
             try {
                 var textarea = document.createElement('textarea');
                 textarea.innerHTML = props;
-                var decodedStr = textarea.value;
-                var propsObj = eval("(" + decodedStr + ")");
+                var propsObj = JSON.parse(textarea.value);
                 textToCopy = propsObj[type] || "";
             } catch(e) {
                 textToCopy = "Property not found";
             }
         }
     } else if (type === 'copy-as-object') {
-        what = "object";
         if (currentContextNode) {
             var props = currentContextNode.getAttribute("data-props") || "{}";
             try {
                 var textarea = document.createElement('textarea');
                 textarea.innerHTML = props;
-                var decodedStr = textarea.value;
-                var propsObj = eval("(" + decodedStr + ")");
+                var propsObj = JSON.parse(textarea.value);
 
                 var objectName = propsObj['objectName'];
                 var namePart = objectName ? `"${objectName}"` : "None";
@@ -512,13 +1244,11 @@ function copyToClipboard(type) {
                 
                 var extraProps = {};
                 var realnameAttrs = {};
-                // Parse realname and merge attributes
                 if (propsObj['realname']) {
                     realnameAttrs = parseRealnameAttributes(propsObj['realname'], attributeWhitelist);
                     extraProps = Object.assign(extraProps, realnameAttrs);
                 }
 
-                // Add whitelisted properties from propsObj if not already in realname
                 for (var key in propsObj) {
                     if (attributeWhitelist.includes(key) && propsObj[key] !== '' && !realnameAttrs.hasOwnProperty(key)) {
                         extraProps[key] = propsObj[key];
@@ -538,10 +1268,8 @@ function copyToClipboard(type) {
             }
         }
     } else if (type === 'propName') {
-        what = "Property name";
         textToCopy = currentContextPropName || "";
     } else if (type === 'propValue') {
-        what = "Property value";
         textToCopy = currentContextPropValue || "";
     }
 
@@ -559,7 +1287,6 @@ function copyToClipboard(type) {
             showToast('Copied "' + shortText + '" to clipboard.');
         }).catch(function(err) {
             console.error('Failed to copy: ', err);
-            // Fallback for older browsers
             var textArea = document.createElement('textarea');
             textArea.value = textToCopy;
             document.body.appendChild(textArea);
@@ -587,13 +1314,9 @@ function showTreeContextMenu(e, node) {
     e.preventDefault();
     currentContextNode = node;
 
-    // New logic for "copy as object"
     var props = currentContextNode.getAttribute("data-props") || "{}";
     try {
-        var textarea = document.createElement('textarea');
-        textarea.innerHTML = props;
-        var decodedStr = textarea.value;
-        var propsObj = eval("(" + decodedStr + ")");
+        var propsObj = JSON.parse(props);
         var realname = propsObj['realname'] || "";
 
         var copyAsObjectItem = document.querySelector('[data-type="copy-as-object"]');
@@ -625,20 +1348,8 @@ function showPropsContextMenu(e, propName, propValue) {
     menu.style.top = e.pageY + 'px';
 }
 
-function getSelectedNodeXml() {
-    if (currentSelectedNode) {
-        var xml_string = currentSelectedNode.getAttribute("data-xml");
-        if (xml_string) {
-            // Decode HTML entities
-            var textarea = document.createElement('textarea');
-            textarea.innerHTML = xml_string;
-            return textarea.value;
-        }
-    }
-    return null;
-}
-
 function escapeHtml(unsafe) {
+    if (unsafe === null || unsafe === undefined) return "";
     return unsafe
          .replace(/&/g, "&amp;")
          .replace(/</g, "&lt;")
@@ -647,7 +1358,6 @@ function escapeHtml(unsafe) {
          .replace(/'/g, "&#039;");
 }
 
-// Helper function to parse attributes from realname string
 function parseRealnameAttributes(realnameString, whitelist) {
     var attributes = {};
     whitelist.forEach(function(key) {
@@ -665,15 +1375,11 @@ function findElementsByCoordinates(x, y) {
     if (!screenshotImg) return;
 
     if (!screenshotGeometry) {
-        // Try to find screenshot geometry from the first element with geometry
         var allNodes = document.querySelectorAll('.node');
         for (var i = 0; i < allNodes.length; i++) {
             var nodeProps = allNodes[i].getAttribute("data-props") || "{}";
             try {
-                var nodeTextarea = document.createElement('textarea');
-                nodeTextarea.innerHTML = nodeProps;
-                var nodeDecoded = nodeTextarea.value;
-                var nodePropsObj = JSON.parse(nodeDecoded);
+                var nodePropsObj = JSON.parse(nodeProps);
                 if (nodePropsObj['geometry_x'] !== undefined) {
                     screenshotGeometry = {
                         x: parseInt(nodePropsObj['geometry_x']) || 0,
@@ -684,7 +1390,7 @@ function findElementsByCoordinates(x, y) {
             } catch(e) {}
         }
         if (!screenshotGeometry) {
-            screenshotGeometry = {x: 0, y: 0}; // Default fallback
+            screenshotGeometry = {x: 0, y: 0};
         }
     }
 
@@ -703,9 +1409,7 @@ function findElementsByCoordinates(x, y) {
     allNodes.forEach(function(node) {
         var props = node.getAttribute('data-props') || '{}';
         try {
-            var textarea = document.createElement('textarea');
-            textarea.innerHTML = props;
-            var propsObj = JSON.parse(textarea.value);
+            var propsObj = JSON.parse(props);
 
             var elemX = parseInt(propsObj['geometry_x']);
             var elemY = parseInt(propsObj['geometry_y']);
@@ -722,51 +1426,34 @@ function findElementsByCoordinates(x, y) {
     });
 
     if (matchingNodes.length > 0) {
-        // Find the node with the smallest area
         var smallestNode = matchingNodes.reduce(function(prev, curr) {
             var prevArea = prev.width * prev.height;
             var currArea = curr.width * curr.height;
             return (prevArea < currArea) ? prev : curr;
         });
 
-        // Select the smallest node and update overlay
         document.querySelectorAll(".node").forEach(n => n.classList.remove("selected"));
         smallestNode.node.classList.add("selected");
         currentSelectedNode = smallestNode.node;
         var props = currentSelectedNode.getAttribute("data-props") || "{}";
         currentPropsData = props;
         filterAndDisplayProperties();
-        updateElementOverlay(); // Explicitly redraw the overlay for the newly selected node
+        updateElementOverlay();
 
-        // Also highlight all matching nodes in the tree
         matchingNodes.forEach(function(match) {
             match.node.classList.add('highlight');
         });
-        filterTree(matchingNodes.map(m => m.node)); // Call filterTree with the matching nodes
+        filterTree(matchingNodes.map(m => m.node));
     } else {
-        filterTree([]); // If no nodes match, ensure the tree is reset (all visible if checkbox is off)
+        filterTree([]);
     }
 }
 
-// Initialize when DOM is loaded
 document.addEventListener("DOMContentLoaded", function() {
-    originalTreeHTML = document.getElementById('treeContainer').innerHTML;
-
-    // Property Value Search
-    var propertyValueSearch = document.getElementById('propertyValueSearch');
-    if (propertyValueSearch) {
-        propertyValueSearch.addEventListener('input', function() {
-            filterTreeByPropertyValue();
-            toggleClearButton('propertyValueSearch', 'clearPropertyValueSearch');
-        });
-    }
-    
-    // Add search functionality
     document.getElementById("treeSearch").addEventListener("input", function() {
         filterTree();
         toggleClearButton('treeSearch', 'clearTreeSearch');
-        // Wenn Property-Value-Suche aktiv, Tree-Suche ignorieren
-        if (propertyValueSearch && propertyValueSearch.value.length > 0) {
+        if (document.getElementById('propertyValueSearch').value.length > 0) {
             filterTreeByPropertyValue();
         }
     });
@@ -775,7 +1462,6 @@ document.addEventListener("DOMContentLoaded", function() {
         toggleClearButton('propsSearch', 'clearPropsSearch');
     });
 
-    // Add event listener for showOnlyMatches checkbox
     var showOnlyMatchesCheckbox = document.getElementById('showOnlyMatches');
     if (showOnlyMatchesCheckbox) {
         showOnlyMatchesCheckbox.addEventListener('change', function() {
@@ -783,7 +1469,6 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
-    // Screenshot click handler
     var screenshotContainer = document.getElementById('screenshotContainer');
     if (screenshotContainer) {
         screenshotContainer.addEventListener('click', function(e) {
@@ -798,9 +1483,7 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
-    // Consolidated click handler
     document.addEventListener('click', function(e) {
-        // Node selection
         if (e.target.classList.contains("node")) {
             document.querySelectorAll(".node").forEach(n => n.classList.remove("selected"));
             e.target.classList.add("selected");
@@ -811,7 +1494,6 @@ document.addEventListener("DOMContentLoaded", function() {
             updateElementOverlay();
         }
 
-        // Context menu item click
         var contextMenuItem = e.target.closest('.context-menu-item');
         if (contextMenuItem) {
             const type = contextMenuItem.getAttribute('data-type');
@@ -822,7 +1504,6 @@ document.addEventListener("DOMContentLoaded", function() {
             hideContextMenus();
         }
 
-        // Toggle tree nodes
         if (e.target.classList.contains('toggle')) {
             var nested = e.target.parentElement.querySelector('.nested');
             if (nested) {
@@ -832,8 +1513,8 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 
-    // Context menu handler
     document.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
         if (e.target.classList.contains('node')) {
             showTreeContextMenu(e, e.target);
         } else {
@@ -849,7 +1530,6 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 
-    // Properties table header click for sorting
     document.getElementById('props').addEventListener('click', function(e) {
         var th = e.target.closest('th');
         if (th) {
@@ -859,7 +1539,6 @@ document.addEventListener("DOMContentLoaded", function() {
             var sortOrderDropdown = document.getElementById('sortOrder');
             
             if (newSortColumn === sortColumnDropdown.value) {
-                // Cycle through directions
                 if (sortOrderDropdown.value === 'asc') {
                     sortOrderDropdown.value = 'desc';
                 } else if (sortOrderDropdown.value === 'desc') {
@@ -868,7 +1547,6 @@ document.addEventListener("DOMContentLoaded", function() {
                     sortOrderDropdown.value = 'asc';
                 }
             } else {
-                // New column clicked, set to asc
                 sortColumnDropdown.value = newSortColumn;
                 sortOrderDropdown.value = 'asc';
             }
@@ -877,3 +1555,8 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 });
+
+</script>
+
+</body>
+</html>

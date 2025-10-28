@@ -2,12 +2,12 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>XML Viewer - {TITLE}</title>
+<title>Squish Snapshot Viewer - {TITLE}</title>
 <link rel="stylesheet" href="viewer_styles.css">
 </head>
 <body>
 <div class="header">
-  <h1>Object Viewer</h1>
+  <h1>Squish Snapshot Viewer</h1>
   <div class="header-search-group">
     <label>Tree:</label>
     <div class="search-container">
@@ -23,18 +23,33 @@
     </div>
   </div>
   <div class="header-search-group">
-    <label>Sort:</label>
+    <label>Prop Values:</label>
+    <div class="search-container">
+      <input id="propertyValueSearch" placeholder="Search by property value..." style="width:150px; padding:4px; padding-right:25px;">
+      <button id="clearPropertyValueSearch" class="clear-btn" onclick="clearPropertyValueSearch()" title="Clear search">&times;</button>
+    </div>
+  </div>
+  <div class="header-search-group">
+    <label>Sort by:</label>
+    <select id="sortColumn" onchange="refreshProperties()" style="padding:4px;">
+      <option value="Property">Property</option>
+      <option value="Value">Value</option>
+    </select>
     <select id="sortOrder" onchange="refreshProperties()" style="padding:4px;">
-      <option value="desc">Descending</option>
       <option value="asc">Ascending</option>
+      <option value="desc">Descending</option>
       <option value="none">None</option>
     </select>
+  </div>
+  <div class="header-search-group">
+    <input type="checkbox" id="showOnlyMatches">
+    <label for="showOnlyMatches" style="color: white; font-size: 12px;">Show only matching elements</label>
   </div>
 </div>
 <div class="container">
   <div class="sidebar">
-    <div class="sidebar-header">
-      <h3 style="margin:0;">Object Tree</h3>
+    <div class="sidebar-header panel-header">
+      <h3>Object Tree</h3>
     </div>
     <div class="sidebar-content">
       <div id="treeContainer">{TREE_HTML}</div>
@@ -42,15 +57,17 @@
   </div>
   <div class="right-panel">
     <div class="screenshot-panel">
-      <h3>Screenshot</h3>
+      <div class="panel-header">
+        <h3>Squish Snapshot</h3>
+        <p id="screenshot-path" class="props">{XML_FILE_PATH}</p>
+      </div>
       <div class="screenshot-container" id="screenshotContainer">
         {SCREENSHOT_IMG}
       </div>
-      <p><small>{SCREENSHOT_NAME}</small></p>
     </div>
     <div class="properties-panel">
-      <div class="properties-header">
-        <h3 style="margin:0;">Selected Node Properties</h3>
+      <div class="properties-header panel-header">
+        <h3>Selected Node Properties</h3>
       </div>
       <div class="properties-content">
         <div id="props">Click a node in the tree to see its properties here.</div>
@@ -58,19 +75,20 @@
     </div>
   </div>
 </div>
-
 <!-- Context Menus -->
 <div id="treeContextMenu" class="context-menu">
-  <div class="context-menu-item" onclick="copyToClipboard('realname')">Copy realname</div>
-  <div class="context-menu-item" onclick="copyToClipboard('class')">Copy class</div>
-  <div class="context-menu-item" onclick="copyToClipboard('objectName')">Copy objectName</div>
+  <div class="context-menu-item" data-type="realname">Copy real name</div>
+  <div class="context-menu-item" data-type="copy-as-object">Copy as BasePage object</div>
+  <div class="context-menu-item" data-type="class">Copy class name</div>
+  <div class="context-menu-item" data-type="objectName">Copy object name</div>
 </div>
 
 <div id="propsContextMenu" class="context-menu">
-  <div class="context-menu-item" onclick="copyToClipboard('propName')">Copy property name</div>
-  <div class="context-menu-item" onclick="copyToClipboard('propValue')">Copy property value</div>
+  <div class="context-menu-item" data-type="propValue">Copy property value</div>
+  <div class="context-menu-item" data-type="propName">Copy property name</div>
 </div>
 
+<script>var attributeWhitelist = {WHITELIST};</script>
 <script src="viewer_scripts.js"></script>
 
 <!-- Hidden XML data for copying -->
