@@ -1,49 +1,36 @@
-This is a command-line tool that generates an HTML report for viewing and inspecting Squish XML snapshot files in a web browser.
+
+# Squish Snapshot Viewer
+
+Dieses Tool dient zur visuellen Anzeige und Analyse von Squish Snapshot XML-Dateien direkt im Browser. Die Oberfläche ist vollständig webbasiert und benötigt keine Python-Installation.
 
 ## Features
 
-- **Tree View**: Displays the complete object hierarchy from the Squish snapshot in a collapsible tree structure.
-- **Property Inspector**: Click on any element in the tree to view its properties, including attributes, geometry, and visual information.
-- **Embedded Screenshot**: Shows the screenshot that was captured with the snapshot.
-- **File Loading**:
-  - Load a file from the command line: `python show_snap.py <path_to_file.xml>`.
-- **Interactive Element Highlighting**: Clicking on an element in the screenshot will now highlight the smallest element at that position in the object tree and display its properties.
+- **Datei- und Ordnerauswahl**: Wähle einen Ordner mit XML-Snapshots aus, die Dateien werden links als Liste angezeigt.
+- **Objektbaum**: Die XML-Hierarchie wird als interaktiver, ausklappbarer Baum dargestellt. Doppelklick auf die Baum-Überschrift expandiert/kollabiert alle Knoten.
+- **Screenshot-Anzeige**: Das im Snapshot eingebettete PNG-Bild wird angezeigt. Über einen Zoom-Slider kann die Ansicht skaliert werden.
+- **Element-Highlighting**: Ein Klick ins Screenshot-Bild wählt das kleinste passende Element im Baum aus und hebt es visuell hervor.
+- **Eigenschaftentabelle**: Die Eigenschaften des gewählten Elements werden als sortierbare Tabelle angezeigt. Rechtsklick auf eine Eigenschaft öffnet ein Kontextmenü zum Kopieren von Name oder Wert.
+- **Kontextmenüs**: Im Baum und in der Eigenschaftentabelle stehen Kontextmenüs zum schnellen Kopieren von Namen, Typen oder Objekt-Strings zur Verfügung.
+- **Suche & Filter**: Es gibt separate Suchfelder für Baum, Eigenschaften und Werte. Treffer werden gelb markiert, optional können nur passende Knoten angezeigt werden.
+- **Layout & Theme**: Die Ansicht kann zwischen "Side-by-side" und gestapeltem Layout umgeschaltet werden. Mehrere Farbschemata stehen zur Auswahl.
+- **Hilfe-Popup**: Über das Fragezeichen rechts oben öffnet sich ein Hilfe-Fenster mit Erläuterungen zur Bedienung.
 
-## Recent Improvements
+## Bedienung
 
-- **Refactored Asset Loading**: CSS, JavaScript, and HTML template files are now loaded directly from external files at runtime, improving maintainability and development workflow.
-- **Enhanced Security & Reliability**: Replaced potentially unsafe `eval()` calls with `JSON.parse()` in JavaScript assets for better security and more robust JSON parsing.
-- **Improved Visual Feedback**: Adjusted the pulsing animation for highlighted elements to provide a more uniform and noticeable visual effect across different element sizes. 
+1. Öffne die `viewer.html` im Browser (empfohlen: Chrome, Edge, Firefox).
+2. Wähle über "Select Folder" einen Ordner mit Squish XML-Snapshots aus.
+3. Klicke auf eine Datei in der Liste, um sie zu laden.
+4. Navigiere im Objektbaum, klicke auf Knoten für Details und nutze die Kontextmenüs.
+5. Über das Screenshot-Bild kannst du Elemente direkt auswählen und hervorheben.
+6. Nutze die Suchfelder und Layout-/Theme-Optionen für eine individuelle Ansicht.
+7. Die Hilfe ist jederzeit über das Fragezeichen erreichbar.
 
-## Installation
+## Hinweise
 
-1. Clone the repository or download the source code.
-2. Install the dependencies using pip:
+- Es werden ausschließlich XML-Dateien mit Squish-Snapshot-Struktur unterstützt.
+- Die Anwendung läuft komplett lokal im Browser, es werden keine Daten übertragen.
+- Für Feedback oder Fragen siehe Hilfe-Popup.
 
-```bash
-pip install -r requirements.txt
-```
+---
 
-## Usage
-
-To run the application, execute the following command from your terminal:
-
-```bash
-python show_snap.py
-```
-
-### Opening Files
-
-- **From the Command Line**: You can open an XML file directly by passing its path as a command-line argument:
-
-```bash
-  python show_snap.py /path/to/your/snapshot.xml
-```
-
-  If no file is specified, the program will interactively prompt you to select an XML file from the current directory or a specified directory.
-
-### Interacting with the Viewer
-
-- **Object Tree**: Navigate the object hierarchy on the left panel. Click the arrows to expand or collapse child elements.
-- **Properties**: Click on an object name in the tree. Its properties will be displayed in the "Properties" panel on the right.
-- **Screenshot**: The captured screenshot is shown in the top right panel. Clicking on an element in the screenshot will highlight the smallest element at that position in the object tree.
+**Entwickelt für die schnelle visuelle Analyse von Squish Snapshots.**
