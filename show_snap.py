@@ -13,52 +13,7 @@ COLOR_BLUE = '\033[94m'
 COLOR_RESET = '\033[0m'
 
 CONFIG_FILE = ".last_folder"
-
-# This code is adapted from main_app.py
-
-def parse_object_xml(xml_path):
-    """Parse XML file and return root element"""
-    try:
-        with open(xml_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-        
-        xml_start = content.find('<ui')
-        if xml_start == -1:
-            xml_start = content.find('<')
-        
-        if xml_start > 0:
-            content = content[xml_start:]
-        
-        root = ET.fromstring(content)
-    except Exception as e:
-        print(f"Error parsing XML: {e}")
-        return None
-    return root
-
-def extract_image_from_element(element):
-    """Extract base64 image from element if present"""
-    image_elem = element.find('.//image[@type="PNG"]')
-    if image_elem is not None and image_elem.text:
-        return image_elem.text.strip()
-    return None
-
-import sys
-import os
-import xml.etree.ElementTree as ET
-from html import escape
-import json
-import webbrowser
-
-# ANSI escape codes for colors
-COLOR_RED = '\033[91m'
-COLOR_GREEN = '\033[92m'
-COLOR_YELLOW = '\033[93m'
-COLOR_BLUE = '\033[94m'
-COLOR_RESET = '\033[0m'
-
-CONFIG_FILE = ".last_folder"
-
-# This code is adapted from main_app.py
+SCRIPT_DIR = os.path.dirname(os.path.realpath(sys.argv[0]))
 
 def parse_object_xml(xml_path):
     """Parse XML file and return root element"""
@@ -180,16 +135,18 @@ def build_tree_html(node, counter=None):
 
 def load_asset(file_name):
     """Load asset file content from the filesystem."""
+    asset_path = os.path.join(SCRIPT_DIR, file_name)
     try:
-        with open(file_name, 'r', encoding='utf-8') as f:
+        with open(asset_path, 'r', encoding='utf-8') as f:
             return f.read()
     except FileNotFoundError:
-        raise FileNotFoundError(f"Asset file not found: {file_name}")
+        raise FileNotFoundError(f"Asset file not found: {asset_path}")
 
 def load_whitelist(file_name='whitelist.txt'):
     """Load whitelist from a file."""
+    asset_path = os.path.join(SCRIPT_DIR, file_name)
     try:
-        with open(file_name, 'r', encoding='utf-8') as f:
+        with open(asset_path, 'r', encoding='utf-8') as f:
             return [line.strip() for line in f if line.strip()]
     except FileNotFoundError:
         return []
@@ -240,262 +197,28 @@ def generate_html_from_xml(xml_path):
     html = html.replace('{SCREENSHOT_IMG}', screenshot_img)
     html = html.replace('{SCREENSHOT_NAME}', f"Screenshot for {os.path.splitext(os.path.basename(xml_path))[0]}")
     html = html.replace('{RAW_XML}', escape(raw_xml))
+    html = html.replace('{XML_FILE_PATH}', os.path.abspath(xml_path))
 
     return html
 
 def select_xml_file(path):
     """
-    Handles the interactive selection of an XML file from a given path.
-    Returns the absolute path to the selected XML file, "EXIT_PROGRAM" if the user
-    chooses to exit, or None if no XML files are found or an error occurs.
+    Handles the selection of an XML file from a given path.
+    Returns the absolute path to the selected XML file, or "EXIT_PROGRAM"
+    if no XML files are found.
     """
     xml_files = [f for f in os.listdir(path) if f.endswith('.xml')]
     if not xml_files:
         print(f"{COLOR_RED}No XML files found in '{path}'{COLOR_RESET}")
-        return "EXIT_PROGRAM" # Indicate no file found, but don't exit program
+        return "EXIT_PROGRAM"
 
     if len(xml_files) == 1:
         print(f"{COLOR_BLUE}Automatically selecting the only XML file: {xml_files[0]}{COLOR_RESET}")
         return os.path.join(path, xml_files[0])
 
-    page_size = 10
-    current_page = 0
-    while True:
-        start_index = current_page * page_size
-        end_index = min(start_index + page_size, len(xml_files))
-
-        print(f"{COLOR_YELLOW}--- Page {current_page + 1}/{(len(xml_files) + page_size - 1) // page_size} ---")
-        for i in range(start_index, end_index):
-            print(f"  {COLOR_GREEN}{i+1}:{COLOR_RESET} {xml_files[i]}")
-
-        print(f"{COLOR_YELLOW}Enter number (1-{len(xml_files)}), full filename, 'n' for next, 'p' for previous, or 'x'/'0' to exit:{COLOR_RESET}")
-
-        try:
-            choice = input("> ").strip().lower()
-
-            if choice in ('x', '0'):
-                print(f"{COLOR_BLUE}\nAborted.{COLOR_RESET}")
-                return "EXIT_PROGRAM" # Special value to indicate program exit
-            elif choice == 'n':
-                if end_index < len(xml_files):
-                    current_page += 1
-                else:
-                    print(f"{COLOR_YELLOW}No next page.{COLOR_RESET}")
-            elif choice == 'p':
-                if current_page > 0:
-                    current_page -= 1
-                else:
-                    print(f"{COLOR_YELLOW}No previous page.{COLOR_RESET}")
-            elif choice.isdigit():
-                choice_index = int(choice) - 1
-                if 0 <= choice_index < len(xml_files):
-                    selected_file = xml_files[choice_index]
-                    return os.path.join(path, selected_file)
-                else:
-                    print(f"{COLOR_RED}Invalid number, please try again.{COLOR_RESET}")
-            elif choice in xml_files:
-                selected_file = choice
-                return os.path.join(path, selected_file)
-            else:
-                print(f"{COLOR_RED}Invalid input, please enter a number, a valid filename, 'n', 'p', 'x', or '0'.{COLOR_RESET}")
-        except (KeyboardInterrupt, EOFError):
-            print(f"{COLOR_BLUE}\nAborted.{COLOR_RESET}")
-            return "EXIT_PROGRAM" # Indicate program exit
-
-def show_help():
-    """Prints the help message."""
-    print("Usage: python show_snap.py [path]")
-    print("  [path] can be a path to an XML file or a directory containing XML files.")
-    print("If no path is provided, it will try to load the last used directory.")
-
-def load_last_folder_path():
-    """Loads the last used folder path from the config file."""
-    if os.path.exists(CONFIG_FILE):
-        with open(CONFIG_FILE, "r") as f:
-            return f.read().strip()
-    return None
-
-def save_last_folder_path(path):
-    """Saves the last used folder path to the config file."""
-    with open(CONFIG_FILE, "w") as f:
-        f.write(path)
-
-def main():
-    """
-    CLI to generate and view a Squish snapshot report.
-    """
-    input_path = None
-    if len(sys.argv) > 1:
-        input_path = sys.argv[1]
-    else:
-        input_path = load_last_folder_path()
-
-    if not input_path:
-        show_help()
-        return
-
-    current_path = input_path
-    while True:
-        xml_path = None
-        
-        if os.path.isfile(current_path) and current_path.endswith('.xml'):
-            xml_path = current_path
-            current_path = os.path.dirname(current_path)
-            save_last_folder_path(current_path)
-            print(f"{COLOR_BLUE}Processing specified XML file: {xml_path}...{COLOR_RESET}")
-        elif os.path.isdir(current_path):
-            save_last_folder_path(current_path)
-            print(f"{COLOR_BLUE}Searching directory '{current_path}' for XML files.{COLOR_RESET}")
-            selected = select_xml_file(current_path)
-            if selected == "EXIT_PROGRAM":
-                break
-            xml_path = selected
-        else:
-            print(f"{COLOR_RED}Error: '{current_path}' is not a valid XML file or a directory.{COLOR_RESET}\n")
-            break
-
-        if xml_path:
-            html_content = generate_html_from_xml(xml_path)
-            base_name = os.path.splitext(os.path.basename(xml_path))[0]
-            report_filename = f"{base_name}_view.html"
-            with open(report_filename, 'w', encoding='utf-8') as f:
-                f.write(html_content)
-
-            print(f"{COLOR_GREEN}Report saved to {report_filename}{COLOR_RESET}")
-            webbrowser.open(f'file://{os.path.realpath(report_filename)}')
-            print(f"{COLOR_BLUE}Opening report in your default web browser...{COLOR_RESET}")
-
-        print(f"{COLOR_YELLOW}Press 'x' or '0' to exit, or any other key to select another file from the same directory:{COLOR_RESET}")
-        choice = input("> ").strip().lower()
-        if choice in ('x', '0'):
-            break
-
-if __name__ == '__main__':
-    main()
-
-def load_asset(file_name):
-    """Load asset file content from the filesystem."""
-    try:
-        with open(file_name, 'r', encoding='utf-8') as f:
-            return f.read()
-    except FileNotFoundError:
-        raise FileNotFoundError(f"Asset file not found: {file_name}")
-
-def load_whitelist(file_name='whitelist.txt'):
-    """Load whitelist from a file."""
-    try:
-        with open(file_name, 'r', encoding='utf-8') as f:
-            return [line.strip() for line in f if line.strip()]
-    except FileNotFoundError:
-        return []
-
-def generate_html_from_xml(xml_path):
-    """Generate HTML viewer content from an XML file"""
-    xml_root = parse_object_xml(xml_path)
-    if xml_root is None:
-        return "<h1>Error: Failed to parse XML file.</h1>"
-
-    screenshot_b64 = ""
-    first_element = xml_root.find(".//element")
-    if first_element is not None:
-        image_data = extract_image_from_element(first_element)
-        if image_data:
-            screenshot_b64 = image_data
-
-    tree_html = "<p><i>No object structure found.</i></p>"
-    root_element = xml_root.find(".//element")
-    if root_element is not None:
-        tree_html_frag = build_tree_html(root_element)[0]
-        tree_html = f"<ul class='tree'>\n{tree_html_frag}\n</ul>"
-    
-    with open(xml_path, "r", encoding="utf-8", errors="replace") as fh:
-        raw_xml = fh.read()
-
-    title = escape(os.path.basename(xml_path))
-    if screenshot_b64:
-        screenshot_img = f"<img class='screenshot' src='data:image/png;base64,{screenshot_b64}'>"
-    else:
-        screenshot_img = "<p><i>No screenshot found.</i></p>"
-
-    try:
-        html_template = load_asset('viewer_template.html')
-        css_content = load_asset('viewer_styles.css')
-        js_content = load_asset('viewer_scripts.js')
-    except FileNotFoundError as e:
-        return f"<h1>Error: {e}</h1>"
-
-    whitelist = load_whitelist()
-    html_template = html_template.replace('{WHITELIST}', json.dumps(whitelist))
-
-    html_template = html_template.replace('<link rel="stylesheet" href="viewer_styles.css">', f'<style>{css_content}</style>')
-    html_template = html_template.replace('<script src="viewer_scripts.js"></script>', f'<script>{js_content}</script>')
-
-    html = html_template.replace('{TITLE}', title)
-    html = html.replace('{TREE_HTML}', tree_html)
-    html = html.replace('{SCREENSHOT_IMG}', screenshot_img)
-    html = html.replace('{SCREENSHOT_NAME}', f"Screenshot for {os.path.splitext(os.path.basename(xml_path))[0]}")
-    html = html.replace('{RAW_XML}', escape(raw_xml))
-
-    return html
-
-def select_xml_file(path):
-    """
-    Handles the interactive selection of an XML file from a given path.
-    Returns the absolute path to the selected XML file, "EXIT_PROGRAM" if the user
-    chooses to exit, or None if no XML files are found or an error occurs.
-    """
-    xml_files = [f for f in os.listdir(path) if f.endswith('.xml')]
-    if not xml_files:
-        print(f"{COLOR_RED}No XML files found in '{path}'{COLOR_RESET}")
-        return "EXIT_PROGRAM" # Indicate no file found, but don't exit program
-
-    if len(xml_files) == 1:
-        print(f"{COLOR_BLUE}Automatically selecting the only XML file: {xml_files[0]}{COLOR_RESET}")
-        return os.path.join(path, xml_files[0])
-
-    page_size = 10
-    current_page = 0
-    while True:
-        start_index = current_page * page_size
-        end_index = min(start_index + page_size, len(xml_files))
-
-        print(f"{COLOR_YELLOW}--- Page {current_page + 1}/{(len(xml_files) + page_size - 1) // page_size} ---")
-        for i in range(start_index, end_index):
-            print(f"  {COLOR_GREEN}{i+1}:{COLOR_RESET} {xml_files[i]}")
-
-        print(f"{COLOR_YELLOW}Enter number (1-{len(xml_files)}), full filename, 'n' for next, 'p' for previous, or 'x'/'0' to exit:{COLOR_RESET}")
-
-        try:
-            choice = input("> ").strip().lower()
-
-            if choice in ('x', '0'):
-                print(f"{COLOR_BLUE}Aborted.{COLOR_RESET}")
-                return "EXIT_PROGRAM" # Special value to indicate program exit
-            elif choice == 'n':
-                if end_index < len(xml_files):
-                    current_page += 1
-                else:
-                    print(f"{COLOR_YELLOW}No next page.{COLOR_RESET}")
-            elif choice == 'p':
-                if current_page > 0:
-                    current_page -= 1
-                else:
-                    print(f"{COLOR_YELLOW}No previous page.{COLOR_RESET}")
-            elif choice.isdigit():
-                choice_index = int(choice) - 1
-                if 0 <= choice_index < len(xml_files):
-                    selected_file = xml_files[choice_index]
-                    return os.path.join(path, selected_file)
-                else:
-                    print(f"{COLOR_RED}Invalid number, please try again.{COLOR_RESET}")
-            elif choice in xml_files:
-                selected_file = choice
-                return os.path.join(path, selected_file)
-            else:
-                print(f"{COLOR_RED}Invalid input, please enter a number, a valid filename, 'n', 'p', 'x', or '0'.{COLOR_RESET}")
-        except (KeyboardInterrupt, EOFError):
-            print(f"{COLOR_BLUE}\nAborted.{COLOR_RESET}")
-            return "EXIT_PROGRAM" # Indicate program exit
+    # Non-interactive: just select the first one.
+    print(f"{COLOR_BLUE}Multiple XML files found. Automatically selecting the first one: {xml_files[0]}{COLOR_RESET}")
+    return os.path.join(path, xml_files[0])
 
 def show_help():
     """Prints the help message."""

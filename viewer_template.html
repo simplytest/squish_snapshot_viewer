@@ -30,10 +30,14 @@
     </div>
   </div>
   <div class="header-search-group">
-    <label>Sort:</label>
+    <label>Sort by:</label>
+    <select id="sortColumn" onchange="refreshProperties()" style="padding:4px;">
+      <option value="Property">Property</option>
+      <option value="Value">Value</option>
+    </select>
     <select id="sortOrder" onchange="refreshProperties()" style="padding:4px;">
-      <option value="desc">Descending</option>
       <option value="asc">Ascending</option>
+      <option value="desc">Descending</option>
       <option value="none">None</option>
     </select>
   </div>
@@ -54,8 +58,8 @@
   <div class="right-panel">
     <div class="screenshot-panel">
       <div class="panel-header">
-        <h3>Screenshot</h3>
-        <button id="clearHighlight" style="display: none;">Clear Highlight</button>
+        <h3>Squish Snapshot</h3>
+        <p id="screenshot-path" class="props">{XML_FILE_PATH}</p>
       </div>
       <div class="screenshot-container" id="screenshotContainer">
         {SCREENSHOT_IMG}
