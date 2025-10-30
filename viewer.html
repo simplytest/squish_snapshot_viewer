@@ -1,84 +1,68 @@
-<style>
-    /* Hilfe-Popup Styles */
-    #help-popup {
-        position: fixed;
-        top: 0;
-        right: 0;
-        height: 100vh;
-        width: 50vw;
-        max-width: none;
-        min-width: 320px;
-        background: #fff;
-        box-shadow: -4px 0 24px rgba(0, 0, 0, 0.18);
-        z-index: 2000;
-        display: none;
-        animation: slide-in-right 0.4s cubic-bezier(.4, 0, .2, 1);
-        border-radius: 12px 0 0 12px;
-        display: flex;
-        flex-direction: column;
-    }
-
-    @keyframes slide-in-right {
-        from {
-            right: -60vw;
-            opacity: 0;
-        }
-
-        to {
-            right: 0;
-            opacity: 1;
-        }
-    }
-
-    #help-popup .help-header {
-    background: #8D6E63;
-    color: #fff;
-    padding: 0.35rem 0.7rem;
-    font-size: 1.1rem;
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-radius: 12px 0 0 0;
-    position: sticky;
-    top: 0;
-    z-index: 1;
-    }
-
-    #help-popup .help-close {
-        background: none;
-        border: none;
-        color: #fff;
-        font-size: 1.5rem;
-        cursor: pointer;
-        margin-left: 1rem;
-    }
-
-    #help-popup .help-content {
-        padding: 1.25rem;
-        overflow-y: auto;
-        flex: 1 1 auto;
-    }
-</style>
-<!-- Hilfe-Popup -->
-<div id="help-popup">
-    <div class="help-header">
-        Hilfe
-        <button class="help-close" id="help-close-btn" title="Schließen">
-            <i class="bi bi-x-lg"></i>
-        </button>
-    </div>
-    <div class="help-content">
-        <div id="help-dynamic-content">
-            <div class="text-center text-muted">Lade Hilfe ...</div>
-        </div>
-    </div>
-</div>
 <!doctype html>
 <html lang="en">
-
 <head>
     <meta charset="utf-8">
+    <style>
+        /* Hilfe-Popup Styles */
+        #help-popup {
+            position: fixed;
+            top: 0;
+            right: 0;
+            height: 100vh;
+            width: 50vw;
+            max-width: none;
+            min-width: 320px;
+            background: #fff;
+            box-shadow: -4px 0 24px rgba(0, 0, 0, 0.18);
+            z-index: 2000;
+            display: none;
+            animation: slide-in-right 0.4s cubic-bezier(.4, 0, .2, 1);
+            border-radius: 12px 0 0 12px;
+            flex-direction: column;
+        }
+
+        @keyframes slide-in-right {
+            from {
+                right: -60vw;
+                opacity: 0;
+            }
+
+            to {
+                right: 0;
+                opacity: 1;
+            }
+        }
+
+        #help-popup .help-header {
+            background: #8D6E63;
+            color: #fff;
+            padding: 0.35rem 0.7rem;
+            font-size: 1.1rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-radius: 12px 0 0 0;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        #help-popup .help-close {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 1.5rem;
+            cursor: pointer;
+            margin-left: 1rem;
+        }
+
+        #help-popup .help-content {
+            padding: 1.25rem;
+            overflow-y: auto;
+            flex: 1 1 auto;
+        }
+    </style>
     <script>
         // Help text as Markdown string (editable here)
         const HILFE_MD = `
@@ -101,6 +85,7 @@
     <span style="font-size:2em; font-weight:bold;">Squish Snapshot Viewer Tool</span>
 </div>
 
+## Overview
 This tool was created to visually display Squish snapshots and to provide quick navigation, search, and localization 
 of elements from the Squish snapshot XML file. The XML hierarchy is represented in a tree structure.  
 Selecting an element in the tree causes its geometry and coordinates (if available) to be used to visually highlight the 
@@ -193,6 +178,37 @@ you also can right click on a property to open a context menu with copy options.
 ---
 
 *Questions or feedback? Contact the developer.*
+
+## Release Notes
+
+### v1.3.0
+- Fix. Harmonized UI spacing
+- Fix. Implemented overlay recalculation on window resize
+- New. Added BasePage element menu generation with recurision to parent if more then one container found
+- New. Improved navigation with automatic scrolling to highlighted elements in object tree
+- New. Enhanced element selection highlighting
+
+### v1.2.1
+- New. Zoom factor check boxes and theme are now persistent
+
+### v1.2.0
+- New. Added Help page with self-contained Base64 pictures
+
+### v1.1.2
+- New. Added zoom factor for pictures and overlays
+- New. Added File List collapsable
+
+### v1.1.1
+- Fix. Scrollable card areas
+- Fix. Better height handling
+- New. Added themes support
+
+### v1.1.0
+- Fix. Layout improvements
+
+### v1.0.0
+- New. Initial version with Object Tree, Snapshot view, and Properties
+
 `;
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -354,7 +370,7 @@ you also can right click on a property to open a context menu with copy options.
         }
 
         .node.selected {
-            background-color: #A1887F;
+            background-color: #9ef5f9 !important;
         }
 
         .element-overlay {
@@ -966,10 +982,24 @@ you also can right click on a property to open a context menu with copy options.
 </head>
 
 <body>
+    <!-- Hilfe-Popup -->
+    <div id="help-popup">
+        <div class="help-header">
+            Help
+            <button class="help-close" id="help-close-btn" title="Schließen">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+        <div class="help-content">
+            <div id="help-dynamic-content">
+                <div class="text-center text-muted">Load Help ...</div>
+            </div>
+        </div>
+    </div>
 
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark flex-shrink-0 shadow-sm">
         <div class="container-fluid">
-            <a class="navbar-brand d-flex align-items-center gap-2" href="#">
+            <a class="navbar-brand d-flex align-items-center gap-1" href="#">
                 <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"
                     style="flex-shrink:0;">
                     <circle cx="20" cy="20" r="20" fill="#4CAF50" />
@@ -989,7 +1019,7 @@ you also can right click on a property to open a context menu with copy options.
             </a>
             <div class="collapse navbar-collapse">
                 <form class="d-flex w-100">
-                    <div class="ms-auto d-flex align-items-center gap-3 flex-nowrap">
+                    <div class="ms-auto d-flex align-items-center gap-1 flex-nowrap">
                         <div class="input-group input-group-sm" style="width: 230px;">
                             <span class="input-group-text">Tree:</span>
                             <input id="treeSearch" class="form-control" type="search" placeholder="Search...">
@@ -1020,7 +1050,7 @@ you also can right click on a property to open a context menu with copy options.
                                 <option value="red">Red</option>
                             </select>
                         </div>
-                        <span class="ms-2" title="Hilfe" id="help-icon-btn">
+                        <span class="ms-2" title="Help" id="help-icon-btn">
                             <i class="bi bi-question-circle"
                                 style="font-size: 1.35rem; color: #fff; cursor: pointer;"></i>
                         </span>
@@ -1084,7 +1114,7 @@ you also can right click on a property to open a context menu with copy options.
     </style>
     <div class="container-fluid main-container">
         <div class="row h-100">
-            <div id="file-list-col" class="col-md-2 h-100 d-flex flex-column p-2 bg-body-tertiary">
+            <div id="file-list-col" class="col-md-2 h-100 d-flex flex-column p-1 bg-body-tertiary">
                 <div class="card shadow h-100 d-flex flex-column">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <span class="file-list-title">Folder Files</span>
@@ -1092,19 +1122,19 @@ you also can right click on a property to open a context menu with copy options.
                             style="cursor: pointer; font-size: 1.25rem; color: white;"></i>
                     </div>
                     <div class="card-body d-flex flex-column p-0">
-                        <div class="p-2 border-bottom">
+                        <div class="p-1 border-bottom">
                             <input type="file" id="folderInput" webkitdirectory style="display: none;" />
                             <button id="folderSelectBtn"
-                                class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2">
+                                class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-1">
                                 <i class="bi bi-folder2-open"></i>
                                 <span class="folder-select-text">Select Folder</span>
                             </button>
                         </div>
-                        <div id="fileList" class="overflow-auto flex-grow-1 p-2"></div>
+                        <div id="fileList" class="overflow-auto flex-grow-1 p-1"></div>
                     </div>
                 </div>
             </div>
-            <main id="main-content-col" class="col-md-10 h-100 d-flex flex-column p-2">
+            <main id="main-content-col" class="col-md-10 h-100 d-flex flex-column p-1">
                 <div id="initial-message"
                     class="flex-grow-1 d-flex flex-column justify-content-center align-items-center text-muted">
                     <svg width="200" height="200" viewBox="0 0 200 200">
@@ -1200,7 +1230,7 @@ you also can right click on a property to open a context menu with copy options.
                     <h1 id="initial-message-text" class="h1">Select a folder to start.</h1>
                 </div>
                 <div id="viewerContent" class="d-none flex-grow-1 h-100">
-                    <div class="row h-100">
+                    <div class="row h-100 g-1">
                         <div class="col-md-4 h-100 d-flex flex-column">
                             <div class="card h-100 d-flex flex-column shadow" style="min-height: 0;">
                                 <div id="object-tree-header"
@@ -1218,8 +1248,8 @@ you also can right click on a property to open a context menu with copy options.
                             </div>
                         </div>
                         <div id="right-panel-container" class="col-md-8 h-100 d-flex flex-column">
-                            <div class="card mb-2 shadow">
-                                <div class="card-header d-flex align-items-center gap-2 py-1">
+                            <div class="card mb-1 shadow">
+                                <div class="card-header d-flex align-items-center gap-1 py-1">
                                     <span class="text-nowrap">Squish Snapshot:</span>
                                     <!--small id="screenshot-path" class="text-white-50 text-nowrap"></small-->
                                     <div class="d-flex align-items-center ms-auto" style="width: 250px;">
@@ -1249,6 +1279,7 @@ you also can right click on a property to open a context menu with copy options.
     <div id="treeContextMenu" class="context-menu dropdown-menu">
         <a class="context-menu-item dropdown-item" href="#" data-type="realname">Copy real name</a>
         <a class="context-menu-item dropdown-item" href="#" data-type="copy-as-object">Copy as BasePage object</a>
+        <a class="context-menu-item dropdown-item" href="#" data-type="generate-basepage-variable">Generate BasePage Variable</a>
         <a class="context-menu-item dropdown-item" href="#" data-type="class">Copy class name</a>
         <a class="context-menu-item dropdown-item" href="#" data-type="objectName">Copy object name</a>
     </div>
@@ -1264,6 +1295,64 @@ you also can right click on a property to open a context menu with copy options.
         let xmlFiles = [];
         let sortConfig = { column: 'Property', order: 'none' };
         var attributeWhitelist = ["name", "text", "title", "type", "unnamed", "visible", "windowTitle", "simplifiedType"];
+
+        function parseContainerString(containerStr) {
+            let fragments = [];
+            let current = containerStr;
+            while (true) {
+                let match = current.match(/^{container=(.*)}(.*)$/s);
+                if (match) {
+                    fragments.unshift(match[2].trim());
+                    current = match[1].trim();
+                } else {
+                    fragments.unshift(current.trim());
+                    break;
+                }
+            }
+            return fragments;
+        }
+
+        function parseAttributes(fragment) {
+            let regex = /(\w+)='([^']*)'/g;
+            let attrs = {};
+            let match;
+            while ((match = regex.exec(fragment)) !== null) {
+                attrs[match[1]] = match[2];
+            }
+            return attrs;
+        }
+
+        function generateBasePageCode(containerStr) {
+            const fragments = parseContainerString(containerStr);
+            let codeLines = [];
+            let parentVar = "BasePage.quick_view";
+            for (let i = 0; i < fragments.length; i++) {
+                const attrs = parseAttributes(fragments[i]);
+                if (!attrs.objectName && !attrs.type) {
+                    // Überspringe Fragmente ohne objectName und type
+                    continue;
+                }
+                const objectName = attrs.objectName ? `'${attrs.objectName}'` : "None";
+                const type = attrs.type ? `'${attrs.type}'` : "None";
+                let args = [];
+                for (const [key, value] of Object.entries(attrs)) {
+                    if (["objectName", "type", "visible", "unnamed", "id"].includes(key)) continue;
+                    args.push(`${key}='${value}'`);
+                }
+                let varName;
+                const nameSource = attrs.objectName || attrs.id;
+                if (nameSource) {
+                    // Wandelt CamelCase in snake_case um
+                    varName = nameSource.replace(/([a-z])([A-Z])/g, '$1_$2').replace(/([A-Z]+)([A-Z][a-z])/g, '$1_$2').toLowerCase();
+                } else {
+                    varName = `element${i}`;
+                }
+                let line = `${varName} = BasePage.element(${parentVar}, ${objectName}, ${type}${args.length ? ", " + args.join(", ") : ""})`;
+                codeLines.push(line);
+                parentVar = varName;
+            }
+            return codeLines.join("\n");
+        }
 
         document.addEventListener("DOMContentLoaded", function () {
             const folderSelectBtn = document.getElementById('folderSelectBtn');
@@ -1314,6 +1403,14 @@ you also can right click on a property to open a context menu with copy options.
             layoutSwitch.addEventListener('change', function () {
                 toggleLayout(this.checked);
                 localStorage.setItem('sideBySideLayout', this.checked);
+                setTimeout(() => updateElementOverlay(), 50);
+            });
+
+            // Update overlay on window resize (debounced)
+            let resizeTimer;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(updateElementOverlay, 50);
             });
             // Show-Only-Matches-Checkbox aus localStorage wiederherstellen
             const showOnlyMatchesCheckbox = document.getElementById('showOnlyMatches');
@@ -1410,7 +1507,7 @@ you also can right click on a property to open a context menu with copy options.
                     const fileListFragment = document.createDocumentFragment();
                     xmlFiles.forEach((file, index) => {
                         const button = document.createElement('button');
-                        button.className = 'btn btn-outline-secondary w-100 mb-1 d-flex align-items-center gap-2 file-list-button';
+                        button.className = 'btn btn-outline-secondary w-100 mb-1 d-flex align-items-center gap-1 file-list-button';
                         button.dataset.index = index;
 
                         const icon = document.createElement('i');
@@ -1567,20 +1664,6 @@ you also can right click on a property to open a context menu with copy options.
                     html += `<ul class="nested">`;
                     childElements.forEach(child => { html += buildTreeHtmlJS(child); });
                     html += `</ul>`;
-                    // Toggle-Icon dynamisch ändern, je nach collapsed-Status
-                    document.addEventListener('click', function (e) {
-                        if (e.target.classList.contains('toggle')) {
-                            const li = e.target.closest('li');
-                            if (li) {
-                                const nested = li.querySelector('.nested');
-                                if (nested) {
-                                    nested.classList.toggle('collapsed');
-                                    // Icon setzen
-                                    e.target.textContent = nested.classList.contains('collapsed') ? '+' : '-';
-                                }
-                            }
-                        }
-                    });
                 } else {
                     html += `<span class="node" data-props='${dataProps}' data-xml='${dataXml}'>${escapeHtml(label)}</span>`;
                 }
@@ -1650,6 +1733,7 @@ you also can right click on a property to open a context menu with copy options.
                         const nested = li.querySelector('.nested');
                         if (nested) {
                             nested.classList.toggle('collapsed');
+                            e.target.textContent = nested.classList.contains('collapsed') ? '+' : '-';
                         }
                     }
                 }
@@ -1712,6 +1796,7 @@ you also can right click on a property to open a context menu with copy options.
 
         function copyToClipboard(type) {
             var textToCopy = "";
+            var lineCount = 0;
 
             if (type === 'realname' || type === 'class' || type === 'objectName') {
                 if (currentContextNode) {
@@ -1758,6 +1843,23 @@ you also can right click on a property to open a context menu with copy options.
                         textToCopy = "Failed to generate object string";
                     }
                 }
+            } else if (type === 'generate-basepage-variable') {
+                if (currentContextNode) {
+                    try {
+                        var textarea = document.createElement('textarea');
+                        textarea.innerHTML = currentContextNode.getAttribute("data-props");
+                        var propsObj = JSON.parse(textarea.value);
+                        var realname = propsObj['realname'];
+                        if (realname && realname.startsWith('{container=')) {
+                            textToCopy = generateBasePageCode(realname);
+                            lineCount = textToCopy.split('\n').length;
+                        } else {
+                            textToCopy = "Cannot generate code: not a container string.";
+                        }
+                    } catch (e) {
+                        textToCopy = "Failed to generate object string";
+                    }
+                }
             } else if (type === 'propName') {
                 textToCopy = currentContextPropName || "";
             } else if (type === 'propValue') {
@@ -1777,8 +1879,12 @@ you also can right click on a property to open a context menu with copy options.
 
             if (textToCopy) {
                 navigator.clipboard.writeText(textToCopy).then(() => {
-                    var shortText = textToCopy.length > 50 ? textToCopy.substring(0, 47) + '...' : textToCopy;
-                    showToast('Copied "' + shortText + '" to clipboard.');
+                    if (type === 'generate-basepage-variable') {
+                        showToast('Copied ' + lineCount + ' lines to clipboard.');
+                    } else {
+                        var shortText = textToCopy.length > 50 ? textToCopy.substring(0, 47) + '...' : textToCopy;
+                        showToast('Copied "' + shortText + '" to clipboard.');
+                    }
                 }).catch(err => {
                     console.error('Failed to copy: ', err);
                     showToast('Failed to copy.');
@@ -2091,12 +2197,24 @@ you also can right click on a property to open a context menu with copy options.
 
             if (matchingNodes.length > 0) {
                 const smallestNode = matchingNodes.reduce((prev, curr) => (prev.width * prev.height < curr.width * curr.height) ? prev : curr);
-                document.querySelectorAll(".node").forEach(n => n.classList.remove("selected"));
+                document.querySelectorAll(".node").forEach(n => {
+                    n.classList.remove("selected");
+                    n.classList.remove("highlight");
+                });
+                
+                // Zuerst alle passenden Elemente mit 'highlight' markieren
+                matchingNodes.forEach(match => match.node.classList.add('highlight'));
+                
+                // Dann das kleinste Element mit 'selected' markieren (überschreibt 'highlight')
                 smallestNode.node.classList.add("selected");
                 currentSelectedNode = smallestNode.node;
                 refreshProperties();
-                matchingNodes.forEach(match => match.node.classList.add('highlight'));
                 filterTree(matchingNodes.map(m => m.node));
+                
+                // Scroll zum ausgewählten Element im Baum
+                setTimeout(() => {
+                    smallestNode.node.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 100);
             } else {
                 filterTree([]);
             }
