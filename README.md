@@ -1,36 +1,44 @@
 
 # Squish Snapshot Viewer
 
-Dieses Tool dient zur visuellen Anzeige und Analyse von Squish Snapshot XML-Dateien direkt im Browser. Die Oberfläche ist vollständig webbasiert und benötigt keine Python-Installation.
+A browser-based tool for visual display and analysis of Squish Snapshot XML files. The interface is completely web-based and requires no Python installation.
 
 ## Features
 
-- **Datei- und Ordnerauswahl**: Wähle einen Ordner mit XML-Snapshots aus, die Dateien werden links als Liste angezeigt.
-- **Objektbaum**: Die XML-Hierarchie wird als interaktiver, ausklappbarer Baum dargestellt. Doppelklick auf die Baum-Überschrift expandiert/kollabiert alle Knoten.
-- **Screenshot-Anzeige**: Das im Snapshot eingebettete PNG-Bild wird angezeigt. Über einen Zoom-Slider kann die Ansicht skaliert werden.
-- **Element-Highlighting**: Ein Klick ins Screenshot-Bild wählt das kleinste passende Element im Baum aus und hebt es visuell hervor.
-- **Eigenschaftentabelle**: Die Eigenschaften des gewählten Elements werden als sortierbare Tabelle angezeigt. Rechtsklick auf eine Eigenschaft öffnet ein Kontextmenü zum Kopieren von Name oder Wert.
-- **Kontextmenüs**: Im Baum und in der Eigenschaftentabelle stehen Kontextmenüs zum schnellen Kopieren von Namen, Typen oder Objekt-Strings zur Verfügung.
-- **Suche & Filter**: Es gibt separate Suchfelder für Baum, Eigenschaften und Werte. Treffer werden gelb markiert, optional können nur passende Knoten angezeigt werden.
-- **Layout & Theme**: Die Ansicht kann zwischen "Side-by-side" und gestapeltem Layout umgeschaltet werden. Mehrere Farbschemata stehen zur Auswahl.
-- **Hilfe-Popup**: Über das Fragezeichen rechts oben öffnet sich ein Hilfe-Fenster mit Erläuterungen zur Bedienung.
+- **File and Folder Selection**: Choose a folder with XML snapshots, files are displayed as a list on the left.
+- **Object Tree**: The XML hierarchy is presented as an interactive, expandable tree. Double-click on the tree header expands/collapses all nodes.
+- **Screenshot Display**: The embedded PNG image in the snapshot is displayed. Use the zoom slider to scale the view.
+- **Element Highlighting**: Clicking on the screenshot selects the smallest matching element in the tree and highlights it visually.
+- **Properties Table**: Properties of the selected element are displayed as a sortable table. Right-click on a property opens a context menu for copying name or value.
+- **Context Menus**: Context menus in the tree and properties table allow quick copying of names, types, or object strings.
+- **Search & Filter**: Separate search fields for tree, properties, and values. Matches are highlighted in yellow, with an option to show only matching nodes.
+- **Layout & Theme**: Switch between "Side-by-side" and stacked layout. Multiple color schemes are available.
+- **Help Popup**: Click the question mark in the top right to open a help window with usage instructions and release notes.
 
-## Bedienung
+## Usage
 
-1. Öffne die `viewer.html` im Browser (empfohlen: Chrome, Edge, Firefox).
-2. Wähle über "Select Folder" einen Ordner mit Squish XML-Snapshots aus.
-3. Klicke auf eine Datei in der Liste, um sie zu laden.
-4. Navigiere im Objektbaum, klicke auf Knoten für Details und nutze die Kontextmenüs.
-5. Über das Screenshot-Bild kannst du Elemente direkt auswählen und hervorheben.
-6. Nutze die Suchfelder und Layout-/Theme-Optionen für eine individuelle Ansicht.
-7. Die Hilfe ist jederzeit über das Fragezeichen erreichbar.
+1. Open `viewer.html` in your browser (recommended: Chrome, Edge, Firefox).
+2. Select a folder with Squish XML snapshots using "Select Folder".
+3. Click on a file in the list to load it.
+4. Navigate the object tree, click on nodes for details, and use the context menus.
+5. Use the screenshot to directly select and highlight elements.
+6. Use the search fields and layout/theme options for a customized view.
+7. Access help anytime via the question mark icon.
 
-## Hinweise
+## Notes
 
-- Es werden ausschließlich XML-Dateien mit Squish-Snapshot-Struktur unterstützt.
-- Die Anwendung läuft komplett lokal im Browser, es werden keine Daten übertragen.
-- Für Feedback oder Fragen siehe Hilfe-Popup.
+- Only XML files with Squish snapshot structure are supported.
+- The application runs completely locally in the browser; no data is transmitted.
+- For feedback or questions, see the Help popup.
+
+## Latest Updates
+
+- Harmonized UI spacing
+- Implemented overlay recalculation on window resize
+- Added BasePage element menu generation
+- Improved navigation with automatic scrolling to highlighted elements
+- Enhanced element selection highlighting
 
 ---
 
-**Entwickelt für die schnelle visuelle Analyse von Squish Snapshots.**
+**Developed for quick visual analysis of Squish snapshots.**
