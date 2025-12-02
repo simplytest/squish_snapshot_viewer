@@ -277,6 +277,49 @@ you also can right click on a property to open a context menu with copy options.
             overflow-y: hidden;
         }
 
+        /* Splitter Styles */
+        .splitter {
+            width: 3px;
+            background-color: #dee2e6;
+            cursor: col-resize;
+            position: relative;
+            transition: background-color 0.2s;
+            flex-shrink: 0;
+            margin: 0 2px;
+        }
+
+        .splitter:hover {
+            background-color: #8D6E63;
+        }
+
+        .splitter.dragging {
+            background-color: #8D6E63;
+        }
+
+        .splitter::before {
+            content: '';
+            position: absolute;
+            left: -4px;
+            right: -4px;
+            top: 0;
+            bottom: 0;
+            z-index: 10;
+        }
+
+        .resizable-tree-col {
+            flex-grow: 0;
+            flex-shrink: 0;
+            min-width: 200px;
+            max-width: 60%;
+        }
+
+        .content-right-col {
+            flex: 1;
+            min-width: 300px;
+            overflow: hidden;
+        }
+
+
         .card-header {
             background-color: #8D6E63;
             color: white;
@@ -1138,6 +1181,7 @@ you also can right click on a property to open a context menu with copy options.
                     </div>
                 </div>
             </div>
+
             <main id="main-content-col" class="col-md-10 h-100 d-flex flex-column p-1">
                 <div id="initial-message"
                     class="flex-grow-1 d-flex flex-column justify-content-center align-items-center text-muted">
@@ -1234,8 +1278,8 @@ you also can right click on a property to open a context menu with copy options.
                     <h1 id="initial-message-text" class="h1">Select a folder to start.</h1>
                 </div>
                 <div id="viewerContent" class="d-none flex-grow-1 h-100">
-                    <div class="row h-100 g-1">
-                        <div class="col-md-4 h-100 d-flex flex-column">
+                    <div class="d-flex h-100">
+                        <div id="tree-col" class="resizable-tree-col h-100 d-flex flex-column" style="width: 33%;">
                             <div class="card h-100 d-flex flex-column shadow" style="min-height: 0;">
                                 <div id="object-tree-header"
                                     class="card-header d-flex justify-content-between align-items-center py-1"
@@ -1258,7 +1302,10 @@ you also can right click on a property to open a context menu with copy options.
                                 <div id="treeContainer" class="card-body card-body-scrollable"></div>
                             </div>
                         </div>
-                        <div id="right-panel-container" class="col-md-8 h-100 d-flex flex-column">
+
+                        <div id="content-splitter" class="splitter"></div>
+
+                        <div id="right-panel-container" class="content-right-col h-100 d-flex flex-column">
                             <div class="card mb-1 shadow d-flex flex-column flex-grow-1" style="min-height: 0;">
                                 <div class="card-header d-flex align-items-center gap-1 py-1 flex-shrink-0">
                                     <span class="text-nowrap">Squish Snapshot:</span>
@@ -1474,7 +1521,9 @@ you also can right click on a property to open a context menu with copy options.
                         item.removeAttribute('title');
                     });
                 }
+                setTimeout(() => updateElementOverlay(), 50);
             }
+
 
             sidebarToggleBtn.addEventListener('click', function () {
                 const isCollapsed = !fileListCol.classList.contains('collapsed');
@@ -1837,6 +1886,51 @@ you also can right click on a property to open a context menu with copy options.
                     row.classList.add('table-info');
                 }
             });
+
+            // Splitter functionality
+            const splitter = document.getElementById('content-splitter');
+            const treeCol = document.getElementById('tree-col');
+            let isResizing = false;
+
+            // Load saved width
+            const savedTreeWidth = localStorage.getItem('treeWidth');
+            if (savedTreeWidth) {
+                treeCol.style.width = savedTreeWidth + 'px';
+            }
+
+            if (splitter) {
+                splitter.addEventListener('mousedown', function (e) {
+                    isResizing = true;
+                    splitter.classList.add('dragging');
+                    document.body.style.cursor = 'col-resize';
+                    document.body.style.userSelect = 'none'; // Prevent text selection
+                });
+
+                document.addEventListener('mousemove', function (e) {
+                    if (!isResizing) return;
+
+                    const containerRect = viewerContent.getBoundingClientRect();
+                    let newWidth = e.clientX - containerRect.left;
+
+                    // Constraints
+                    if (newWidth < 200) newWidth = 200;
+                    if (newWidth > containerRect.width * 0.6) newWidth = containerRect.width * 0.6;
+
+                    treeCol.style.width = newWidth + 'px';
+                    updateElementOverlay(); // Update overlay position if visible
+                });
+
+                document.addEventListener('mouseup', function (e) {
+                    if (isResizing) {
+                        isResizing = false;
+                        splitter.classList.remove('dragging');
+                        document.body.style.cursor = '';
+                        document.body.style.userSelect = '';
+                        localStorage.setItem('treeWidth', parseInt(treeCol.style.width));
+                    }
+                });
+            }
+
         });
 
         var currentSelectedNode = null, currentPropsData = null, currentContextNode = null, currentContextPropName = null, currentContextPropValue = null, screenshotGeometry = null;
