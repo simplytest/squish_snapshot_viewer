@@ -1296,6 +1296,7 @@ you also can right click on a property to open a context menu with copy options.
             Variable</a>
         <a class="context-menu-item dropdown-item" href="#" data-type="class">Copy class name</a>
         <a class="context-menu-item dropdown-item" href="#" data-type="objectName">Copy object name</a>
+        <a class="context-menu-item dropdown-item" href="#" data-type="nodePath">Copy Path</a>
     </div>
     <div id="propsContextMenu" class="context-menu dropdown-menu">
         <a class="context-menu-item dropdown-item" href="#" data-type="propValue">Copy property value</a>
@@ -1853,6 +1854,10 @@ you also can right click on a property to open a context menu with copy options.
                         textToCopy = propsObj[type] || "";
                     } catch (e) { textToCopy = "Property not found"; }
                 }
+            } else if (type === 'nodePath') {
+                if (currentContextNode) {
+                    textToCopy = getNodePath(currentContextNode);
+                }
             } else if (type === 'copy-as-object') {
                 if (currentContextNode) {
                     try {
@@ -2288,6 +2293,43 @@ you also can right click on a property to open a context menu with copy options.
             } else {
                 filterTree([]);
             }
+        }
+
+        function getNodePath(node) {
+            var path = [];
+            var current = node;
+
+            while (current) {
+                try {
+                    var textarea = document.createElement('textarea');
+                    textarea.innerHTML = current.getAttribute("data-props");
+                    var propsObj = JSON.parse(textarea.value);
+                    var label = propsObj.objectName || propsObj.simplifiedType || 'element';
+                    path.unshift(label);
+                } catch (e) {
+                    path.unshift('unknown');
+                }
+
+                // Navigate to parent node
+                var parentLi = current.closest('li');
+                if (parentLi) {
+                    var parentUl = parentLi.parentElement;
+                    if (parentUl && parentUl.tagName === 'UL') {
+                        var grandParentLi = parentUl.closest('li');
+                        if (grandParentLi) {
+                            current = grandParentLi.querySelector(':scope > .node');
+                        } else {
+                            current = null;
+                        }
+                    } else {
+                        current = null;
+                    }
+                } else {
+                    current = null;
+                }
+            }
+
+            return path.join(' > ');
         }
 
         function parseRealnameAttributes(realnameString, whitelist) {
