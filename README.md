@@ -33,6 +33,10 @@ A browser-based tool for visual display and analysis of Squish Snapshot XML file
 
 ## Latest Updates
 
+- **Resizable Splitter**: Adjust the width of the Object Tree panel by dragging the splitter.
+- **Enhanced Context Menus**: Right-click on the element overlay in the screenshot to access node actions. Property context menu now includes node actions. Added "Copy Path" option.
+- **Tree Navigation**: Added button to expand/collapse all nodes.
+- **Selection**: Improved element selection and highlighting behavior.
 - Harmonized UI spacing
 - Implemented overlay recalculation on window resize
 - Added BasePage element menu generation

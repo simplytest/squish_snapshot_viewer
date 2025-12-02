@@ -182,6 +182,14 @@ you also can right click on a property to open a context menu with copy options.
 
 ## Release Notes
 
+### v1.4.0
+- New. Resizable Splitter for Object Tree
+- New. Context menu for element overlay
+- New. Extended properties context menu with node actions
+- New. Added Expand/Collapse All button for Object Tree
+- New. Added "Copy Path" to context menus
+- Fix. Improved element selection and highlighting behavior
+
 ### v1.3.0
 - Fix. Harmonized UI spacing
 - Fix. Implemented overlay recalculation on window resize
@@ -423,7 +431,7 @@ you also can right click on a property to open a context menu with copy options.
             position: absolute;
             border: 3px solid #FF0000;
             background: rgba(255, 255, 0, 0.1);
-            pointer-events: none;
+            pointer-events: auto;
             z-index: 10;
             animation: pulsate 2s infinite;
             display: none;
@@ -1348,6 +1356,16 @@ you also can right click on a property to open a context menu with copy options.
     <div id="propsContextMenu" class="context-menu dropdown-menu">
         <a class="context-menu-item dropdown-item" href="#" data-type="propValue">Copy property value</a>
         <a class="context-menu-item dropdown-item" href="#" data-type="propName">Copy property name</a>
+        <li>
+            <hr class="dropdown-divider">
+        </li>
+        <a class="context-menu-item dropdown-item" href="#" data-type="realname">Copy real name</a>
+        <a class="context-menu-item dropdown-item" href="#" data-type="copy-as-object">Copy as BasePage object</a>
+        <a class="context-menu-item dropdown-item" href="#" data-type="generate-basepage-variable">Generate BasePage
+            Variable</a>
+        <a class="context-menu-item dropdown-item" href="#" data-type="class">Copy class name</a>
+        <a class="context-menu-item dropdown-item" href="#" data-type="objectName">Copy object name</a>
+        <a class="context-menu-item dropdown-item" href="#" data-type="nodePath">Copy Path</a>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
@@ -1837,8 +1855,13 @@ you also can right click on a property to open a context menu with copy options.
 
             document.addEventListener('contextmenu', e => {
                 const node = e.target.closest('.node');
+                const overlay = e.target.closest('#elementOverlay');
+
                 if (node) {
                     showTreeContextMenu(e, node);
+                    e.preventDefault();
+                } else if (overlay && currentSelectedNode) {
+                    showTreeContextMenu(e, currentSelectedNode);
                     e.preventDefault();
                 } else {
                     const targetCell = e.target.closest('.props-table td');
@@ -2315,6 +2338,7 @@ you also can right click on a property to open a context menu with copy options.
             hideContextMenus();
             currentContextPropName = propName;
             currentContextPropValue = propValue;
+            currentContextNode = currentSelectedNode;
             const menu = document.getElementById('propsContextMenu');
             menu.style.left = `${e.pageX}px`;
             menu.style.top = `${e.pageY}px`;
