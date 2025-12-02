@@ -497,6 +497,70 @@ you also can right click on a property to open a context menu with copy options.
             background-color: #f0ad4e;
         }
 
+        /* Breadcrumb Styling */
+        .breadcrumb-item a {
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        .breadcrumb-item a:hover {
+            color: #0056b3;
+            text-decoration: underline;
+        }
+
+        /* Ändere Breadcrumb Trenner von "/" zu ">" */
+        .breadcrumb-item + .breadcrumb-item::before {
+            content: ">";
+            margin: 0;
+            color: #6c757d;
+        }
+
+        .breadcrumb {
+            overflow-x: auto;
+            white-space: nowrap;
+            margin-bottom: 0;
+            flex-wrap: nowrap;
+        }
+
+        .breadcrumb-item {
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex-shrink: 1;
+        }
+
+        .breadcrumb-item.text-nowrap {
+            max-width: 250px;
+        }
+
+        /* Responsive breadcrumb items */
+        @media (max-width: 768px) {
+            .breadcrumb-item {
+                max-width: 150px;
+            }
+        }
+
+        /* When file list is collapsed, allow more space */
+        #file-list-col.collapsed ~ * .breadcrumb-item {
+            max-width: 400px;
+        }
+
+        /* Ensure breadcrumb nav doesn't grow too large */
+        nav[aria-label="breadcrumb"] {
+            min-height: 32px;
+            max-height: 40px;
+            overflow: hidden;
+            flex-shrink: 0;
+            width: 100%;
+        }
+
+        /* Better responsive behavior when file card is collapsed */
+        .breadcrumb {
+            min-width: 0;
+            flex: 1;
+        }
+
 
         /* --- Themes --- */
         /* Default/Brown Theme */
@@ -1167,8 +1231,13 @@ you also can right click on a property to open a context menu with copy options.
             min-height: 0;
         }
     </style>
-    <div class="container-fluid main-container">
-        <div class="row h-100">
+    <div class="container-fluid main-container d-flex flex-column p-0">
+        <nav aria-label="breadcrumb" class="px-2 py-1 border-bottom bg-body-tertiary" style="flex-shrink: 0;">
+            <ol class="breadcrumb my-0" id="mainBreadcrumb" style="font-size: 0.85rem;">
+                <li class="breadcrumb-item active">No selection</li>
+            </ol>
+        </nav>
+        <div class="row flex-grow-1 g-0 overflow-hidden">
             <div id="file-list-col" class="col-md-2 h-100 d-flex flex-column p-1 bg-body-tertiary">
                 <div class="card shadow h-100 d-flex flex-column">
                     <div class="card-header d-flex justify-content-between align-items-center">
@@ -1795,7 +1864,201 @@ you also can right click on a property to open a context menu with copy options.
                 if (overlay) {
                     overlay.style.display = 'none';
                 }
+                const breadcrumb = document.getElementById('mainBreadcrumb');
+                if (breadcrumb) {
+                    breadcrumb.innerHTML = '<li class="breadcrumb-item active">Path: (none)</li>';
+                }
             }
+
+            function getNodePathElements(node) {
+                const path = [];
+                let current = node;
+                let safetyCounter = 0;
+
+                while (current && safetyCounter < 50) {
+                    safetyCounter++;
+                    path.unshift(current);
+
+                    // Traversierung nach oben in der Tree-Struktur
+                    const li = current.closest('li');
+                    if (li) {
+                        const ul = li.parentElement;
+                        if (ul && ul.tagName === 'UL') {
+                            // Prüfe ob dies eine verschachtelte Liste ist
+                            const parentLi = ul.parentElement;
+                            if (parentLi && parentLi.tagName === 'LI') {
+                                // Finde das direkte .node Element im Parent-Li
+                                current = parentLi.querySelector(':scope > .node');
+                            } else {
+                                // Wir haben die Root erreicht
+                                current = null;
+                            }
+                        } else {
+                            current = null;
+                        }
+                    } else {
+                        current = null;
+                    }
+                }
+                return path;
+            }
+
+            function updateMainBreadcrumb(node) {
+                console.log("updateMainBreadcrumb called with node:", node);
+                const breadcrumb = document.getElementById('mainBreadcrumb');
+                if (!breadcrumb) {
+                    console.error("Breadcrumb element not found");
+                    return;
+                }
+
+                if (!node) {
+                    breadcrumb.innerHTML = '<li class="breadcrumb-item active">No selection</li>';
+                    return;
+                }
+
+                let path = [];
+                try {
+                    path = getNodePathElements(node);
+                    console.log("Generated path:", path);
+                } catch (e) {
+                    console.error("Path error", e);
+                    breadcrumb.innerHTML = '<li class="breadcrumb-item active text-danger">Path Error: ' + e.message + '</li>';
+                    return;
+                }
+
+                breadcrumb.innerHTML = '';
+
+                // Zeige den Pfad nur an, wenn wir Elemente haben
+                if (path.length === 0) {
+                    const li = document.createElement('li');
+                    li.className = 'breadcrumb-item active';
+                    const displayName = getNodeDisplayName(node);
+                    li.textContent = displayName;
+                    console.log("Single element breadcrumb:", displayName);
+                    breadcrumb.appendChild(li);
+                    return;
+                }
+
+                console.log("Building breadcrumb with", path.length, "elements");
+                path.forEach((nodeItem, index) => {
+                    const li = document.createElement('li');
+                    li.className = 'breadcrumb-item text-nowrap';
+
+                    const label = getNodeDisplayName(nodeItem);
+                    console.log("Breadcrumb item", index, ":", label);
+
+                    if (index === path.length - 1) {
+                        // Letztes Element (aktuell ausgewähltes)
+                        li.classList.add('active');
+                        li.textContent = label;
+                    } else {
+                        // Klickbare Breadcrumb-Elemente
+                        const link = document.createElement('a');
+                        link.href = '#';
+                        link.textContent = label;
+                        link.style.cursor = 'pointer';
+                        link.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            // Node auswählen und Tree entsprechend expandieren
+                            selectTreeNode(nodeItem);
+                            nodeItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        });
+                        li.appendChild(link);
+                    }
+
+                    breadcrumb.appendChild(li);
+                });
+
+                breadcrumb.scrollLeft = breadcrumb.scrollWidth;
+            }
+
+            function getNodeDisplayName(node) {
+                if (!node) {
+                    console.warn("getNodeDisplayName called with null node");
+                    return 'Unknown';
+                }
+                
+                try {
+                    const propsData = node.getAttribute("data-props");
+                    console.log("Node props data:", propsData);
+                    
+                    if (propsData) {
+                        const propsObj = JSON.parse(propsData);
+                        console.log("Parsed props:", propsObj);
+                        
+                        // Priorität: objectName -> simplifiedType -> type -> text content
+                        if (propsObj.objectName && typeof propsObj.objectName === 'string' && propsObj.objectName.trim()) {
+                            return propsObj.objectName.trim();
+                        }
+                        if (propsObj.simplifiedType && typeof propsObj.simplifiedType === 'string' && propsObj.simplifiedType.trim()) {
+                            return propsObj.simplifiedType.trim();
+                        }
+                        if (propsObj.type && typeof propsObj.type === 'string' && propsObj.type.trim()) {
+                            return propsObj.type.trim();
+                        }
+                    }
+                } catch (e) {
+                    console.warn("Error parsing node props:", e);
+                }
+                
+                // Fallback auf den Text-Content
+                let textContent = node.textContent || '';
+                let result = textContent.trim();
+                if (!result) {
+                    result = 'Unnamed Element';
+                }
+                console.log("Final display name:", result);
+                return result;
+            }
+
+            function selectTreeNode(node) {
+                // Alle anderen Nodes deselektieren
+                document.querySelectorAll(".node").forEach(n => n.classList.remove("selected"));
+                
+                // Neuen Node selektieren
+                node.classList.add("selected");
+                currentSelectedNode = node;
+                
+                // Stelle sicher, dass alle Parent-Nodes erweitert sind
+                expandParentNodes(node);
+                
+                // Eigenschaften aktualisieren
+                refreshProperties();
+            }
+
+            function expandParentNodes(node) {
+                let current = node;
+                while (current) {
+                    const li = current.closest('li');
+                    if (li) {
+                        const nested = li.querySelector('.nested');
+                        if (nested && nested.classList.contains('collapsed')) {
+                            nested.classList.remove('collapsed');
+                            const toggle = li.querySelector('.toggle');
+                            if (toggle) {
+                                toggle.textContent = '-';
+                            }
+                        }
+                        
+                        // Gehe zum Parent
+                        const ul = li.parentElement;
+                        if (ul && ul.tagName === 'UL') {
+                            const parentLi = ul.parentElement;
+                            if (parentLi && parentLi.tagName === 'LI') {
+                                current = parentLi.querySelector(':scope > .node');
+                            } else {
+                                current = null;
+                            }
+                        } else {
+                            current = null;
+                        }
+                    } else {
+                        current = null;
+                    }
+                }
+            }
+
+
 
             // All other event listeners
             document.getElementById("treeSearch").addEventListener("input", () => filterTree());
@@ -2188,11 +2451,306 @@ you also can right click on a property to open a context menu with copy options.
         }
 
         function refreshProperties() {
+            console.log("refreshProperties called with node:", currentSelectedNode);
             if (currentSelectedNode) {
-                currentPropsData = currentSelectedNode.getAttribute("data-props") || "{}";
-                filterAndDisplayProperties();
-                updateElementOverlay();
+                try {
+                    currentPropsData = currentSelectedNode.getAttribute("data-props") || "{}";
+                } catch (e) {
+                    console.error("Error getting props data:", e);
+                    currentPropsData = "{}";
+                }
+
+                try {
+                    filterAndDisplayProperties();
+                } catch (e) {
+                    console.error("Error displaying properties:", e);
+                }
+
+                try {
+                    updateElementOverlay();
+                } catch (e) {
+                    console.error("Error updating overlay:", e);
+                }
+
+                try {
+                    console.log("About to call updateMainBreadcrumb...");
+                    updateMainBreadcrumb(currentSelectedNode);
+                } catch (e) {
+                    console.error("Error updating breadcrumb:", e);
+                }
+            } else {
+                console.log("No current selected node");
+                const breadcrumb = document.getElementById('mainBreadcrumb');
+                if (breadcrumb) {
+                    breadcrumb.innerHTML = '<li class="breadcrumb-item active">No selection</li>';
+                }
             }
+        }
+
+        function updateMainBreadcrumb(node) {
+            const breadcrumb = document.getElementById('mainBreadcrumb');
+            if (!breadcrumb) {
+                return;
+            }
+
+            if (!node) {
+                breadcrumb.innerHTML = '<li class="breadcrumb-item active">No selection</li>';
+                return;
+            }
+
+            console.log("Updating breadcrumb for node:", node);
+            let path = [];
+            try {
+                path = getNodePathElements(node);
+                console.log("Path elements found:", path.length, path);
+            } catch (e) {
+                console.error("Path error", e);
+                breadcrumb.innerHTML = '<li class="breadcrumb-item active text-danger">Path Error: ' + e.message + '</li>';
+                return;
+            }
+
+            breadcrumb.innerHTML = '';
+
+            // Zeige den Pfad nur an, wenn wir Elemente haben
+            if (path.length === 0 || path.length === 1) {
+                const li = document.createElement('li');
+                li.className = 'breadcrumb-item active';
+                const displayName = getNodeDisplayName(node);
+                // Adaptive Länge basierend auf verfügbarem Platz
+                const maxLength = getMaxBreadcrumbLength();
+                const shortName = smartTruncateText(displayName, maxLength);
+                li.textContent = shortName;
+                li.title = displayName; // Zeige vollständigen Namen im Tooltip
+                breadcrumb.appendChild(li);
+                return;
+            }
+
+            path.forEach((nodeItem, index) => {
+                const li = document.createElement('li');
+                li.className = 'breadcrumb-item';
+
+                let label = getNodeDisplayName(nodeItem);
+                // Adaptive Länge basierend auf verfügbarem Platz
+                const maxLength = getMaxBreadcrumbLength(path.length);
+                const shortLabel = smartTruncateText(label, maxLength);
+
+                // Prüfe ob es ein Root-Element ist (erstes Element im Pfad)
+                const isRootElement = index === 0;
+
+                if (index === path.length - 1) {
+                    // Letztes Element (aktuell ausgewähltes)
+                    li.classList.add('active');
+                    li.textContent = shortLabel;
+                    li.title = label; // Vollständiger Name im Tooltip
+                } else if (isRootElement) {
+                    // Root-Element nicht klickbar machen
+                    li.textContent = shortLabel;
+                    li.title = label; // Vollständiger Name im Tooltip
+                    li.style.color = '#6c757d'; // Grau einfärben um anzuzeigen dass es nicht klickbar ist
+                } else {
+                    // Klickbare Breadcrumb-Elemente (außer Root)
+                    const link = document.createElement('a');
+                    link.href = '#';
+                    link.textContent = shortLabel;
+                    link.title = label; // Vollständiger Name im Tooltip
+                    link.style.cursor = 'pointer';
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        // Node auswählen und Tree entsprechend expandieren
+                        selectTreeNode(nodeItem);
+                        nodeItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    });
+                    li.appendChild(link);
+                }
+
+                breadcrumb.appendChild(li);
+            });
+
+            breadcrumb.scrollLeft = breadcrumb.scrollWidth;
+        }
+
+        function getNodePathElements(node) {
+            const path = [];
+            let current = node;
+            let safetyCounter = 0;
+
+            while (current && safetyCounter < 50) {
+                safetyCounter++;
+                path.unshift(current);
+
+                // Traversierung nach oben in der Tree-Struktur
+                const li = current.closest('li');
+                if (li) {
+                    const ul = li.parentElement;
+                    if (ul && ul.tagName === 'UL') {
+                        // Prüfe ob dies eine verschachtelte Liste ist
+                        const parentLi = ul.parentElement;
+                        if (parentLi && parentLi.tagName === 'LI') {
+                            // Finde das direkte .node Element im Parent-Li
+                            current = parentLi.querySelector(':scope > .node');
+                        } else {
+                            // Wir haben die Root erreicht
+                            current = null;
+                        }
+                    } else {
+                        current = null;
+                    }
+                } else {
+                    current = null;
+                }
+            }
+            return path;
+        }
+
+        function getNodeDisplayName(node) {
+            if (!node) {
+                return 'Unknown';
+            }
+            
+            try {
+                const propsData = node.getAttribute("data-props");
+                
+                if (propsData) {
+                    const propsObj = JSON.parse(propsData);
+                    
+                    // Priorität: objectName -> simplifiedType -> type -> text content
+                    if (propsObj.objectName && typeof propsObj.objectName === 'string' && propsObj.objectName.trim()) {
+                        return propsObj.objectName.trim();
+                    }
+                    if (propsObj.simplifiedType && typeof propsObj.simplifiedType === 'string' && propsObj.simplifiedType.trim()) {
+                        return propsObj.simplifiedType.trim();
+                    }
+                    if (propsObj.type && typeof propsObj.type === 'string' && propsObj.type.trim()) {
+                        return propsObj.type.trim();
+                    }
+                }
+            } catch (e) {
+                // Ignore parsing errors
+            }
+            
+            // Fallback auf den Text-Content
+            let textContent = node.textContent || '';
+            let result = textContent.trim();
+            if (!result) {
+                result = 'Unnamed Element';
+            }
+            return result;
+        }
+
+        function selectTreeNode(node) {
+            // Alle anderen Nodes deselektieren
+            document.querySelectorAll(".node").forEach(n => n.classList.remove("selected"));
+            
+            // Neuen Node selektieren
+            node.classList.add("selected");
+            currentSelectedNode = node;
+            
+            // Stelle sicher, dass alle Parent-Nodes erweitert sind
+            expandParentNodes(node);
+            
+            // Eigenschaften aktualisieren
+            refreshProperties();
+        }
+
+        function expandParentNodes(node) {
+            let current = node;
+            while (current) {
+                const li = current.closest('li');
+                if (li) {
+                    const nested = li.querySelector('.nested');
+                    if (nested && nested.classList.contains('collapsed')) {
+                        nested.classList.remove('collapsed');
+                        const toggle = li.querySelector('.toggle');
+                        if (toggle) {
+                            toggle.textContent = '-';
+                        }
+                    }
+                    
+                    // Gehe zum Parent
+                    const ul = li.parentElement;
+                    if (ul && ul.tagName === 'UL') {
+                        const parentLi = ul.parentElement;
+                        if (parentLi && parentLi.tagName === 'LI') {
+                            current = parentLi.querySelector(':scope > .node');
+                        } else {
+                            current = null;
+                        }
+                    } else {
+                        current = null;
+                    }
+                } else {
+                    current = null;
+                }
+            }
+        }
+
+        function getMaxBreadcrumbLength(pathLength = 1) {
+            // Prüfe ob die File Card collapsed ist
+            const fileListCol = document.getElementById('file-list-col');
+            const isCollapsed = fileListCol && fileListCol.classList.contains('collapsed');
+            
+            // Berechne verfügbaren Platz basierend auf Layout
+            let baseLength = 30; // Standard für nicht-kollabierte Ansicht
+            
+            if (isCollapsed) {
+                // Mehr Platz verfügbar wenn File Card collapsed ist
+                baseLength = 45;
+            } else {
+                // Weniger Platz, aggressiver kürzen
+                baseLength = 25;
+            }
+            
+            // Reduziere die maximale Länge pro Element bei längeren Pfaden
+            if (pathLength > 3) {
+                baseLength = Math.max(baseLength - (pathLength - 3) * 3, 12);
+            }
+            
+            return baseLength;
+        }
+
+        // Intelligente Textkürzung die versucht sinnvolle Abkürzungen zu erstellen
+        function smartTruncateText(text, maxLength) {
+            if (text.length <= maxLength) {
+                return text;
+            }
+            
+            // Wenn der Text nur wenig länger ist, zeige ihn komplett
+            if (text.length <= maxLength + 5) {
+                return text;
+            }
+            
+            // Versuche bei CamelCase Wörtern zu kürzen
+            if (/[a-z][A-Z]/.test(text)) {
+                // Finde Wortgrenzen in CamelCase
+                const words = text.match(/[A-Z][a-z]*|[a-z]+/g) || [text];
+                
+                if (words.length > 1) {
+                    // Nimm ersten und letzten Teil + Mittelteile kürzen
+                    let result = words[0];
+                    
+                    if (words.length > 2) {
+                        // Füge gekürzten mittleren Teil hinzu
+                        for (let i = 1; i < words.length - 1; i++) {
+                            if (result.length < maxLength - words[words.length-1].length - 3) {
+                                result += words[i].charAt(0); // Nur erster Buchstabe
+                            }
+                        }
+                    }
+                    
+                    // Füge letztes Wort hinzu wenn Platz
+                    const lastWord = words[words.length - 1];
+                    if (result.length + lastWord.length + 3 <= maxLength) {
+                        result += lastWord;
+                    }
+                    
+                    if (result !== text && result.length < text.length) {
+                        return result + '...';
+                    }
+                }
+            }
+            
+            // Fallback: einfache Kürzung
+            return text.substring(0, maxLength - 3) + '...';
         }
 
         function updateElementOverlay() {
