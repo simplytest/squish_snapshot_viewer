@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8">
     <style>
@@ -346,9 +347,11 @@ you also can right click on a property to open a context menu with copy options.
         .tree {
             font-size: 1.08em;
         }
+
         .tree .node {
             font-size: 0.78em !important;
         }
+
         .tree ul {
             list-style-type: none;
             padding-left: 20px;
@@ -934,12 +937,9 @@ you also can right click on a property to open a context menu with copy options.
 
         #right-panel-container.side-by-side>.card {
             width: 50%;
-            height: 100%;
-        }
-
-        #right-panel-container.side-by-side>.card.flex-grow-1 {
-            flex-grow: 1 !important;
-            /* Ensure it still grows */
+            height: 100% !important;
+            flex-grow: 0 !important;
+            flex-shrink: 0 !important;
         }
 
         #file-list-col {
@@ -1103,9 +1103,13 @@ you also can right click on a property to open a context menu with copy options.
     </nav>
 
     <style>
-        .main-container, .row, .col-md-10, .col-md-2 {
+        .main-container,
+        .row,
+        .col-md-10,
+        .col-md-2 {
             height: 100vh;
         }
+
         .card-body-scrollable {
             overflow-y: auto;
             flex-grow: 1;
@@ -1237,19 +1241,26 @@ you also can right click on a property to open a context menu with copy options.
                                     class="card-header d-flex justify-content-between align-items-center py-1"
                                     title="Double-click to expand/collapse all nodes">
                                     <span class="text-nowrap">Object Tree</span>
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" role="switch"
-                                            id="showOnlyMatches" title="Only show nodes that match the current search">
-                                        <label class="form-check-label text-nowrap" for="showOnlyMatches">Only
-                                            matches</label>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <button id="expandCollapseBtn" class="btn btn-sm btn-secondary py-0 px-2"
+                                            title="Expand/Collapse All">
+                                            <i id="expandCollapseIcon" class="bi bi-arrows-collapse"></i>
+                                        </button>
+                                        <div class="form-check form-switch m-0">
+                                            <input class="form-check-input" type="checkbox" role="switch"
+                                                id="showOnlyMatches"
+                                                title="Only show nodes that match the current search">
+                                            <label class="form-check-label text-nowrap" for="showOnlyMatches">Only
+                                                matches</label>
+                                        </div>
                                     </div>
                                 </div>
                                 <div id="treeContainer" class="card-body card-body-scrollable"></div>
                             </div>
                         </div>
                         <div id="right-panel-container" class="col-md-8 h-100 d-flex flex-column">
-                            <div class="card mb-1 shadow">
-                                <div class="card-header d-flex align-items-center gap-1 py-1">
+                            <div class="card mb-1 shadow d-flex flex-column flex-grow-1" style="min-height: 0;">
+                                <div class="card-header d-flex align-items-center gap-1 py-1 flex-shrink-0">
                                     <span class="text-nowrap">Squish Snapshot:</span>
                                     <!--small id="screenshot-path" class="text-white-50 text-nowrap"></small-->
                                     <div class="d-flex align-items-center ms-auto" style="width: 250px;">
@@ -1260,12 +1271,14 @@ you also can right click on a property to open a context menu with copy options.
                                         <span id="scale-value" class="ms-2 text-nowrap">1.0x</span>
                                     </div>
                                 </div>
-                                <div id="screenshotContainer" class="card-body screenshot-container card-body-scrollable"
-                                    style="min-height: 200px;"></div>
+                                <div id="screenshotContainer"
+                                    class="card-body screenshot-container card-body-scrollable flex-grow-1"
+                                    style="min-height: 0;"></div>
                             </div>
-                            <div class="card flex-grow-1 d-flex flex-column shadow" style="min-height: 0;">
-                                <div class="card-header">Selected Node Properties</div>
-                                <div id="props" class="card-body card-body-scrollable">Click a node to see properties.
+                            <div class="card d-flex flex-column shadow" style="height: 35%; min-height: 200px;">
+                                <div class="card-header flex-shrink-0">Selected Node Properties</div>
+                                <div id="props" class="card-body card-body-scrollable flex-grow-1"
+                                    style="min-height: 0;">Click a node to see properties.
                                 </div>
                             </div>
                         </div>
@@ -1279,7 +1292,8 @@ you also can right click on a property to open a context menu with copy options.
     <div id="treeContextMenu" class="context-menu dropdown-menu">
         <a class="context-menu-item dropdown-item" href="#" data-type="realname">Copy real name</a>
         <a class="context-menu-item dropdown-item" href="#" data-type="copy-as-object">Copy as BasePage object</a>
-        <a class="context-menu-item dropdown-item" href="#" data-type="generate-basepage-variable">Generate BasePage Variable</a>
+        <a class="context-menu-item dropdown-item" href="#" data-type="generate-basepage-variable">Generate BasePage
+            Variable</a>
         <a class="context-menu-item dropdown-item" href="#" data-type="class">Copy class name</a>
         <a class="context-menu-item dropdown-item" href="#" data-type="objectName">Copy object name</a>
     </div>
@@ -1471,24 +1485,56 @@ you also can right click on a property to open a context menu with copy options.
             const savedSidebarState = localStorage.getItem('sidebarCollapsed') === 'true';
             toggleSidebar(savedSidebarState);
 
+            function toggleAllNodes() {
+                const treeContainer = document.getElementById('treeContainer');
+                if (!treeContainer) return;
+
+                const nestedLists = treeContainer.querySelectorAll('ul.nested');
+                if (nestedLists.length === 0) return;
+
+                const areAnyExpanded = Array.from(nestedLists).some(ul => !ul.classList.contains('collapsed'));
+
+                nestedLists.forEach(ul => {
+                    if (areAnyExpanded) {
+                        ul.classList.add('collapsed');
+                    } else {
+                        ul.classList.remove('collapsed');
+                    }
+                });
+
+                // Update toggle icons
+                treeContainer.querySelectorAll('.toggle').forEach(toggle => {
+                    toggle.textContent = areAnyExpanded ? '+' : '-';
+                });
+
+                // Update main button icon
+                const icon = document.getElementById('expandCollapseIcon');
+                const btn = document.getElementById('expandCollapseBtn');
+                if (icon && btn) {
+                    if (areAnyExpanded) {
+                        // Now collapsed
+                        icon.classList.remove('bi-arrows-collapse');
+                        icon.classList.add('bi-arrows-expand');
+                        btn.title = "Expand All";
+                    } else {
+                        // Now expanded
+                        icon.classList.remove('bi-arrows-expand');
+                        icon.classList.add('bi-arrows-collapse');
+                        btn.title = "Collapse All";
+                    }
+                }
+            }
+
             const objectTreeHeader = document.getElementById('object-tree-header');
             if (objectTreeHeader) {
-                objectTreeHeader.addEventListener('dblclick', () => {
-                    const treeContainer = document.getElementById('treeContainer');
-                    if (!treeContainer) return;
+                objectTreeHeader.addEventListener('dblclick', toggleAllNodes);
+            }
 
-                    const nestedLists = treeContainer.querySelectorAll('ul.nested');
-                    if (nestedLists.length === 0) return;
-
-                    const areAnyExpanded = Array.from(nestedLists).some(ul => !ul.classList.contains('collapsed'));
-
-                    nestedLists.forEach(ul => {
-                        if (areAnyExpanded) {
-                            ul.classList.add('collapsed');
-                        } else {
-                            ul.classList.remove('collapsed');
-                        }
-                    });
+            const expandCollapseBtn = document.getElementById('expandCollapseBtn');
+            if (expandCollapseBtn) {
+                expandCollapseBtn.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevent bubbling if header has other listeners
+                    toggleAllNodes();
                 });
             }
 
@@ -2091,7 +2137,7 @@ you also can right click on a property to open a context menu with copy options.
             document.getElementById("props").innerHTML = formatPropertiesAsTable(currentPropsData, propsSearchTerm, highlightTerms);
         }
 
-        function filterTree(nodesToDisplay = null) {
+        function filterTree(nodesToDisplay = null, highlightOnlyPath = false) {
             var searchTerm = document.getElementById('treeSearch').value.toLowerCase();
             var treeContainer = document.getElementById('treeContainer');
             var showOnlyMatchesChecked = document.getElementById('showOnlyMatches').checked;
@@ -2099,7 +2145,8 @@ you also can right click on a property to open a context menu with copy options.
 
             var allLIs = treeContainer.querySelectorAll('li');
             allLIs.forEach(li => { li.style.display = ''; });
-            treeContainer.querySelectorAll('ul').forEach(ul => { ul.style.display = ''; });
+            // Reset all nested UL display styles to allow collapsed class to work
+            treeContainer.querySelectorAll('ul.nested').forEach(ul => { ul.style.display = ''; });
 
             var nodesToProcess = [];
             if (nodesToDisplay) {
@@ -2115,14 +2162,36 @@ you also can right click on a property to open a context menu with copy options.
             }
 
             nodesToProcess.forEach(nodeSpan => {
-                nodeSpan.style.backgroundColor = 'yellow';
+                // Only highlight the node itself if not in path-only mode
+                if (!highlightOnlyPath) {
+                    nodeSpan.style.backgroundColor = 'yellow';
+                }
                 var current = nodeSpan.closest('li');
                 while (current) {
                     current.style.display = '';
                     var parentUl = current.parentElement;
                     if (parentUl && parentUl.tagName === 'UL') {
+                        // If in path-only mode, always expand collapsed nodes in the path
+                        if (highlightOnlyPath && parentUl.classList.contains('collapsed')) {
+                            parentUl.classList.remove('collapsed');
+                            // Update the toggle icon for this node
+                            const parentLi = parentUl.closest('li');
+                            if (parentLi) {
+                                const toggle = parentLi.querySelector(':scope > .toggle');
+                                if (toggle) {
+                                    toggle.textContent = '-';
+                                }
+                            }
+                        }
                         parentUl.style.display = '';
                         current = parentUl.closest('li');
+                        // Highlight parent nodes in the path
+                        if (current && highlightOnlyPath) {
+                            const parentNode = current.querySelector(':scope > .node');
+                            if (parentNode) {
+                                parentNode.style.backgroundColor = 'yellow';
+                            }
+                        }
                     } else break;
                 }
             });
@@ -2201,16 +2270,17 @@ you also can right click on a property to open a context menu with copy options.
                     n.classList.remove("selected");
                     n.classList.remove("highlight");
                 });
-                
+
                 // Zuerst alle passenden Elemente mit 'highlight' markieren
-                matchingNodes.forEach(match => match.node.classList.add('highlight'));
-                
+                // matchingNodes.forEach(match => match.node.classList.add('highlight'));
+
                 // Dann das kleinste Element mit 'selected' markieren (überschreibt 'highlight')
                 smallestNode.node.classList.add("selected");
                 currentSelectedNode = smallestNode.node;
                 refreshProperties();
-                filterTree(matchingNodes.map(m => m.node));
-                
+                // Only highlight the path to the selected node, not all matching nodes
+                filterTree([smallestNode.node], true);
+
                 // Scroll zum ausgewählten Element im Baum
                 setTimeout(() => {
                     smallestNode.node.scrollIntoView({ behavior: 'smooth', block: 'center' });
