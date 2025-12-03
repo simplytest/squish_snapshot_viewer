@@ -16,6 +16,20 @@ A browser-based tool for visual display and analysis of Squish Snapshot XML file
 - **Layout & Theme**: Switch between "Side-by-side" and stacked layout. Multiple color schemes are available.
 - **Help Popup**: Click the question mark in the top right to open a help window with usage instructions and release notes.
 
+## Installation
+
+### Download on Ubuntu
+
+Download the viewer using curl:
+```bash
+curl -O https://raw.githubusercontent.com/simplytest/squish_snapshot_viewer/master/viewer.html
+```
+
+Or using wget:
+```bash
+wget https://raw.githubusercontent.com/simplytest/squish_snapshot_viewer/master/viewer.html
+```
+
 ## Usage
 
 1. Open `viewer.html` in your browser (recommended: Chrome, Edge, Firefox).
