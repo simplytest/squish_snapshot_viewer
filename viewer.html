@@ -413,7 +413,7 @@ you also can right click on a property to open a context menu with copy options.
 
         .tree ul {
             list-style-type: none;
-            padding-left: 20px;
+            padding-left: 10px;
         }
 
         .tree li {
@@ -517,7 +517,7 @@ you also can right click on a property to open a context menu with copy options.
         }
 
         /* Ändere Breadcrumb Trenner von "/" zu ">" */
-        .breadcrumb-item + .breadcrumb-item::before {
+        .breadcrumb-item+.breadcrumb-item::before {
             content: ">";
             margin: 0;
             color: #6c757d;
@@ -550,7 +550,7 @@ you also can right click on a property to open a context menu with copy options.
         }
 
         /* When file list is collapsed, allow more space */
-        #file-list-col.collapsed ~ * .breadcrumb-item {
+        #file-list-col.collapsed~* .breadcrumb-item {
             max-width: 400px;
         }
 
@@ -1605,19 +1605,19 @@ you also can right click on a property to open a context menu with copy options.
                         })
                         .then(xmlContent => {
                             console.log('Auto-loading test XML file for testing... Content length:', xmlContent.length);
-                            
+
                             // Simulate file selection to properly initialize UI
                             const messageText = document.getElementById('initial-message-text');
                             if (messageText) {
                                 messageText.textContent = 'Test XML file loaded automatically.';
                             }
-                            
+
                             // Hide initial message and show viewer content
                             const initialMessage = document.getElementById('initial-message');
                             const viewerContent = document.getElementById('viewerContent');
                             if (initialMessage) initialMessage.classList.add('d-none');
                             if (viewerContent) viewerContent.classList.remove('d-none');
-                            
+
                             // Generate the viewer
                             generateViewerFromXML(xmlContent, 'test-data.xml');
                         })
@@ -2024,15 +2024,15 @@ you also can right click on a property to open a context menu with copy options.
                     console.warn("getNodeDisplayName called with null node");
                     return 'Unknown';
                 }
-                
+
                 try {
                     const propsData = node.getAttribute("data-props");
                     console.log("Node props data:", propsData);
-                    
+
                     if (propsData) {
                         const propsObj = JSON.parse(propsData);
                         console.log("Parsed props:", propsObj);
-                        
+
                         // Priorität: objectName -> simplifiedType -> type -> text content
                         if (propsObj.objectName && typeof propsObj.objectName === 'string' && propsObj.objectName.trim()) {
                             return propsObj.objectName.trim();
@@ -2047,7 +2047,7 @@ you also can right click on a property to open a context menu with copy options.
                 } catch (e) {
                     console.warn("Error parsing node props:", e);
                 }
-                
+
                 // Fallback auf den Text-Content
                 let textContent = node.textContent || '';
                 let result = textContent.trim();
@@ -2061,17 +2061,17 @@ you also can right click on a property to open a context menu with copy options.
             function selectTreeNode(node) {
                 // Alle anderen Nodes deselektieren
                 document.querySelectorAll(".node").forEach(n => n.classList.remove("selected"));
-                
+
                 // Neuen Node selektieren
                 node.classList.add("selected");
                 currentSelectedNode = node;
-                
+
                 // Stelle sicher, dass alle Parent-Nodes erweitert sind
                 expandParentNodes(node);
-                
+
                 // Breadcrumb aktualisieren
                 updateMainBreadcrumb(node);
-                
+
                 // Eigenschaften aktualisieren
                 refreshProperties();
             }
@@ -2089,7 +2089,7 @@ you also can right click on a property to open a context menu with copy options.
                                 toggle.textContent = '-';
                             }
                         }
-                        
+
                         // Gehe zum Parent
                         const ul = li.parentElement;
                         if (ul && ul.tagName === 'UL') {
@@ -2566,11 +2566,11 @@ you also can right click on a property to open a context menu with copy options.
                 const li = document.createElement('li');
                 li.className = 'breadcrumb-item active';
                 const displayName = getNodeDisplayName(node);
-                
+
                 // Prüfe ob Kürzung nötig ist durch Breitenmessung
                 const tempElements = [{ label: displayName, index: 0, isRootElement: true }];
                 const needsTruncation = shouldTruncateBreadcrumb(tempElements, breadcrumb);
-                
+
                 let shortName = displayName;
                 if (needsTruncation) {
                     const maxLength = getMaxBreadcrumbLength();
@@ -2589,20 +2589,20 @@ you also can right click on a property to open a context menu with copy options.
                 li.className = 'breadcrumb-item';
                 let label = getNodeDisplayName(nodeItem);
                 const isRootElement = index === 0;
-                
+
                 tempElements.push({ li, label, nodeItem, index, isRootElement });
             });
-            
+
             // Teste ob der vollständige Breadcrumb zu breit ist
             const needsTruncation = shouldTruncateBreadcrumb(tempElements, breadcrumb);
-            
+
             path.forEach((nodeItem, index) => {
                 const li = document.createElement('li');
                 li.className = 'breadcrumb-item';
 
                 let label = getNodeDisplayName(nodeItem);
                 let shortLabel = label;
-                
+
                 // Nur kürzen wenn tatsächlich nötig
                 if (needsTruncation) {
                     const maxLength = getMaxBreadcrumbLength(path.length);
@@ -2681,13 +2681,13 @@ you also can right click on a property to open a context menu with copy options.
             if (!node) {
                 return 'Unknown';
             }
-            
+
             try {
                 const propsData = node.getAttribute("data-props");
-                
+
                 if (propsData) {
                     const propsObj = JSON.parse(propsData);
-                    
+
                     // Priorität: objectName -> simplifiedType -> type -> text content
                     if (propsObj.objectName && typeof propsObj.objectName === 'string' && propsObj.objectName.trim()) {
                         return propsObj.objectName.trim();
@@ -2702,7 +2702,7 @@ you also can right click on a property to open a context menu with copy options.
             } catch (e) {
                 // Ignore parsing errors
             }
-            
+
             // Fallback auf den Text-Content
             let textContent = node.textContent || '';
             let result = textContent.trim();
@@ -2715,17 +2715,17 @@ you also can right click on a property to open a context menu with copy options.
         function selectTreeNode(node) {
             // Alle anderen Nodes deselektieren
             document.querySelectorAll(".node").forEach(n => n.classList.remove("selected"));
-            
+
             // Neuen Node selektieren
             node.classList.add("selected");
             currentSelectedNode = node;
-            
+
             // Stelle sicher, dass alle Parent-Nodes erweitert sind
             expandParentNodes(node);
-            
+
             // Breadcrumb aktualisieren
             updateMainBreadcrumb(node);
-            
+
             // Eigenschaften aktualisieren
             refreshProperties();
         }
@@ -2743,7 +2743,7 @@ you also can right click on a property to open a context menu with copy options.
                             toggle.textContent = '-';
                         }
                     }
-                    
+
                     // Gehe zum Parent
                     const ul = li.parentElement;
                     if (ul && ul.tagName === 'UL') {
@@ -2766,10 +2766,10 @@ you also can right click on a property to open a context menu with copy options.
             // Prüfe ob die File Card collapsed ist
             const fileListCol = document.getElementById('file-list-col');
             const isCollapsed = fileListCol && fileListCol.classList.contains('collapsed');
-            
+
             // Berechne verfügbaren Platz basierend auf Layout
             let baseLength = 30; // Standard für nicht-kollabierte Ansicht
-            
+
             if (isCollapsed) {
                 // Mehr Platz verfügbar wenn File Card collapsed ist
                 baseLength = 45;
@@ -2777,12 +2777,12 @@ you also can right click on a property to open a context menu with copy options.
                 // Weniger Platz, aggressiver kürzen
                 baseLength = 25;
             }
-            
+
             // Reduziere die maximale Länge pro Element bei längeren Pfaden
             if (pathLength > 3) {
                 baseLength = Math.max(baseLength - (pathLength - 3) * 3, 12);
             }
-            
+
             return baseLength;
         }
 
@@ -2794,12 +2794,12 @@ you also can right click on a property to open a context menu with copy options.
             testBreadcrumb.style.position = 'absolute';
             testBreadcrumb.style.visibility = 'hidden';
             testBreadcrumb.style.whiteSpace = 'nowrap';
-            
+
             // Füge alle Elemente mit vollständigen Namen hinzu
             tempElements.forEach(({ label, index, isRootElement }, idx) => {
                 const li = document.createElement('li');
                 li.className = 'breadcrumb-item';
-                
+
                 if (index === tempElements.length - 1) {
                     li.classList.add('active');
                     li.textContent = label;
@@ -2811,18 +2811,18 @@ you also can right click on a property to open a context menu with copy options.
                     link.textContent = label;
                     li.appendChild(link);
                 }
-                
+
                 testBreadcrumb.appendChild(li);
             });
-            
+
             // Füge zum DOM hinzu und messe
             document.body.appendChild(testBreadcrumb);
             const testWidth = testBreadcrumb.scrollWidth;
             document.body.removeChild(testBreadcrumb);
-            
+
             // Verfügbare Breite des Containers
             const availableWidth = breadcrumbContainer.parentElement.clientWidth - 40; // Etwas Puffer
-            
+
             return testWidth > availableWidth;
         }
 
@@ -2831,42 +2831,42 @@ you also can right click on a property to open a context menu with copy options.
             if (text.length <= maxLength) {
                 return text;
             }
-            
+
             // Wenn der Text nur wenig länger ist, zeige ihn komplett
             if (text.length <= maxLength + 5) {
                 return text;
             }
-            
+
             // Versuche bei CamelCase Wörtern zu kürzen
             if (/[a-z][A-Z]/.test(text)) {
                 // Finde Wortgrenzen in CamelCase
                 const words = text.match(/[A-Z][a-z]*|[a-z]+/g) || [text];
-                
+
                 if (words.length > 1) {
                     // Nimm ersten und letzten Teil + Mittelteile kürzen
                     let result = words[0];
-                    
+
                     if (words.length > 2) {
                         // Füge gekürzten mittleren Teil hinzu
                         for (let i = 1; i < words.length - 1; i++) {
-                            if (result.length < maxLength - words[words.length-1].length - 3) {
+                            if (result.length < maxLength - words[words.length - 1].length - 3) {
                                 result += words[i].charAt(0); // Nur erster Buchstabe
                             }
                         }
                     }
-                    
+
                     // Füge letztes Wort hinzu wenn Platz
                     const lastWord = words[words.length - 1];
                     if (result.length + lastWord.length + 3 <= maxLength) {
                         result += lastWord;
                     }
-                    
+
                     if (result !== text && result.length < text.length) {
                         return result + '...';
                     }
                 }
             }
-            
+
             // Fallback: einfache Kürzung
             return text.substring(0, maxLength - 3) + '...';
         }
@@ -2963,7 +2963,7 @@ you also can right click on a property to open a context menu with copy options.
                     nodesToProcess = [currentSelectedNode];
                     shouldHighlightPath = true; // Markiere den ganzen Pfad gelb
                 }
-                
+
                 if (nodesToProcess.length > 0 || searchTerm) {
                     allLIs.forEach(li => { li.style.display = 'none'; });
                 } else {
