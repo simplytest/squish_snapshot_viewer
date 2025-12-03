@@ -12,6 +12,7 @@ A browser-based tool for visual display and analysis of Squish Snapshot XML file
 - **Properties Table**: Properties of the selected element are displayed as a sortable table. Right-click on a property opens a context menu for copying name or value.
 - **Context Menus**: Context menus in the tree and properties table allow quick copying of names, types, or object strings.
 - **Search & Filter**: Separate search fields for tree, properties, and values. Matches are highlighted in yellow, with an option to show only matching nodes.
+- **Navigation Breadcrumb**: Interactive breadcrumb shows the path to the selected element. Click on parent elements to navigate the tree hierarchy.
 - **Layout & Theme**: Switch between "Side-by-side" and stacked layout. Multiple color schemes are available.
 - **Help Popup**: Click the question mark in the top right to open a help window with usage instructions and release notes.
 
@@ -33,6 +34,7 @@ A browser-based tool for visual display and analysis of Squish Snapshot XML file
 
 ## Latest Updates
 
+- **Interactive Breadcrumb**: Navigate the element hierarchy with an intelligent breadcrumb showing the path to selected elements. Features smart text truncation and responsive design.
 - **Resizable Splitter**: Adjust the width of the Object Tree panel by dragging the splitter.
 - **Enhanced Context Menus**: Right-click on the element overlay in the screenshot to access node actions. Property context menu now includes node actions. Added "Copy Path" option.
 - **Tree Navigation**: Added button to expand/collapse all nodes.

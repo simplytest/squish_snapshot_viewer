@@ -163,12 +163,13 @@ you also can right click on a property to open a context menu with copy options.
 
 ## Helper Functions
 
-1. **Expand/Collapse All**: Double-click the header of the object tree to expand or collapse all nodes.
-2. **Highlighting Matches**: When searching in the tree, properties, or values, matching elements are highlighted in yellow.
-3. **Side-by-Side Layout**: Use the layout switch to toggle between side-by-side and stacked views of the right panel.
-4. **Theme Selection**: Use the theme dropdown to change the color scheme of the application and the help popup.
-5. **Help Popup**: Access the help popup anytime via the question mark in the top right. Close it with the X button.
-3. **Copying Values**: Right-click on a property or node to copy its value to the clipboard.
+1. **Interactive Breadcrumb**: Shows the hierarchical path to the selected element with smart truncation. Click on any parent element to navigate up the tree. Root elements are non-clickable to maintain layout stability.
+2. **Expand/Collapse All**: Double-click the header of the object tree to expand or collapse all nodes.
+3. **Highlighting Matches**: When searching in the tree, properties, or values, matching elements are highlighted in yellow.
+4. **Side-by-Side Layout**: Use the layout switch to toggle between side-by-side and stacked views of the right panel.
+5. **Theme Selection**: Use the theme dropdown to change the color scheme of the application and the help popup.
+6. **Help Popup**: Access the help popup anytime via the question mark in the top right. Close it with the X button.
+7. **Copying Values**: Right-click on a property or node to copy its value to the clipboard.
 
 ## Summary
 - Folder Files Card: Load and display XML files from a selected folder.
@@ -181,6 +182,13 @@ you also can right click on a property to open a context menu with copy options.
 *Questions or feedback? Contact the developer.*
 
 ## Release Notes
+
+### v1.5.0
+- New. Interactive Navigation Breadcrumb with hierarchical path display
+- New. Smart text truncation for breadcrumb elements using CamelCase intelligence
+- New. Responsive breadcrumb design adapting to available screen space
+- New. Improved "Only Matches" filter behavior with better tree visibility control
+- Fix. Breadcrumb layout stability when selecting root elements
 
 ### v1.4.0
 - New. Resizable Splitter for Object Tree
@@ -1583,6 +1591,45 @@ you also can right click on a property to open a context menu with copy options.
             layoutSwitch.checked = savedLayout;
             toggleLayout(savedLayout);
 
+            // Auto-load test XML file for testing (check if in test environment)
+            function autoLoadTestXML() {
+                if (window.location.search.includes('autoload=true') || window.location.hostname === '127.0.0.1') {
+                    console.log('Auto-load detected, loading test XML...');
+                    fetch('/test-data.xml')
+                        .then(response => {
+                            console.log('Fetch response status:', response.status);
+                            if (response.ok) {
+                                return response.text();
+                            }
+                            throw new Error(`Test XML file not found (${response.status})`);
+                        })
+                        .then(xmlContent => {
+                            console.log('Auto-loading test XML file for testing... Content length:', xmlContent.length);
+                            
+                            // Simulate file selection to properly initialize UI
+                            const messageText = document.getElementById('initial-message-text');
+                            if (messageText) {
+                                messageText.textContent = 'Test XML file loaded automatically.';
+                            }
+                            
+                            // Hide initial message and show viewer content
+                            const initialMessage = document.getElementById('initial-message');
+                            const viewerContent = document.getElementById('viewerContent');
+                            if (initialMessage) initialMessage.classList.add('d-none');
+                            if (viewerContent) viewerContent.classList.remove('d-none');
+                            
+                            // Generate the viewer
+                            generateViewerFromXML(xmlContent, 'test-data.xml');
+                        })
+                        .catch(error => {
+                            console.log('No test XML file available:', error.message);
+                        });
+                }
+            }
+
+            // Auto-load test data after a short delay to ensure everything is initialized
+            setTimeout(autoLoadTestXML, 1000);
+
             function toggleSidebar(collapse) {
                 const folderSelectBtn = document.getElementById('folderSelectBtn');
                 const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
@@ -2021,6 +2068,9 @@ you also can right click on a property to open a context menu with copy options.
                 
                 // Stelle sicher, dass alle Parent-Nodes erweitert sind
                 expandParentNodes(node);
+                
+                // Breadcrumb aktualisieren
+                updateMainBreadcrumb(node);
                 
                 // Eigenschaften aktualisieren
                 refreshProperties();
@@ -2516,23 +2566,48 @@ you also can right click on a property to open a context menu with copy options.
                 const li = document.createElement('li');
                 li.className = 'breadcrumb-item active';
                 const displayName = getNodeDisplayName(node);
-                // Adaptive Länge basierend auf verfügbarem Platz
-                const maxLength = getMaxBreadcrumbLength();
-                const shortName = smartTruncateText(displayName, maxLength);
+                
+                // Prüfe ob Kürzung nötig ist durch Breitenmessung
+                const tempElements = [{ label: displayName, index: 0, isRootElement: true }];
+                const needsTruncation = shouldTruncateBreadcrumb(tempElements, breadcrumb);
+                
+                let shortName = displayName;
+                if (needsTruncation) {
+                    const maxLength = getMaxBreadcrumbLength();
+                    shortName = smartTruncateText(displayName, maxLength);
+                }
                 li.textContent = shortName;
                 li.title = displayName; // Zeige vollständigen Namen im Tooltip
                 breadcrumb.appendChild(li);
                 return;
             }
 
+            // Erst alle Elemente mit vollem Namen erstellen und messen
+            const tempElements = [];
+            path.forEach((nodeItem, index) => {
+                const li = document.createElement('li');
+                li.className = 'breadcrumb-item';
+                let label = getNodeDisplayName(nodeItem);
+                const isRootElement = index === 0;
+                
+                tempElements.push({ li, label, nodeItem, index, isRootElement });
+            });
+            
+            // Teste ob der vollständige Breadcrumb zu breit ist
+            const needsTruncation = shouldTruncateBreadcrumb(tempElements, breadcrumb);
+            
             path.forEach((nodeItem, index) => {
                 const li = document.createElement('li');
                 li.className = 'breadcrumb-item';
 
                 let label = getNodeDisplayName(nodeItem);
-                // Adaptive Länge basierend auf verfügbarem Platz
-                const maxLength = getMaxBreadcrumbLength(path.length);
-                const shortLabel = smartTruncateText(label, maxLength);
+                let shortLabel = label;
+                
+                // Nur kürzen wenn tatsächlich nötig
+                if (needsTruncation) {
+                    const maxLength = getMaxBreadcrumbLength(path.length);
+                    shortLabel = smartTruncateText(label, maxLength);
+                }
 
                 // Prüfe ob es ein Root-Element ist (erstes Element im Pfad)
                 const isRootElement = index === 0;
@@ -2648,6 +2723,9 @@ you also can right click on a property to open a context menu with copy options.
             // Stelle sicher, dass alle Parent-Nodes erweitert sind
             expandParentNodes(node);
             
+            // Breadcrumb aktualisieren
+            updateMainBreadcrumb(node);
+            
             // Eigenschaften aktualisieren
             refreshProperties();
         }
@@ -2706,6 +2784,46 @@ you also can right click on a property to open a context menu with copy options.
             }
             
             return baseLength;
+        }
+
+        // Prüft ob der Breadcrumb gekürzt werden muss basierend auf tatsächlicher Breite
+        function shouldTruncateBreadcrumb(tempElements, breadcrumbContainer) {
+            // Erstelle einen temporären Breadcrumb zum Messen
+            const testBreadcrumb = document.createElement('ol');
+            testBreadcrumb.className = breadcrumbContainer.className;
+            testBreadcrumb.style.position = 'absolute';
+            testBreadcrumb.style.visibility = 'hidden';
+            testBreadcrumb.style.whiteSpace = 'nowrap';
+            
+            // Füge alle Elemente mit vollständigen Namen hinzu
+            tempElements.forEach(({ label, index, isRootElement }, idx) => {
+                const li = document.createElement('li');
+                li.className = 'breadcrumb-item';
+                
+                if (index === tempElements.length - 1) {
+                    li.classList.add('active');
+                    li.textContent = label;
+                } else if (isRootElement) {
+                    li.textContent = label;
+                } else {
+                    const link = document.createElement('a');
+                    link.href = '#';
+                    link.textContent = label;
+                    li.appendChild(link);
+                }
+                
+                testBreadcrumb.appendChild(li);
+            });
+            
+            // Füge zum DOM hinzu und messe
+            document.body.appendChild(testBreadcrumb);
+            const testWidth = testBreadcrumb.scrollWidth;
+            document.body.removeChild(testBreadcrumb);
+            
+            // Verfügbare Breite des Containers
+            const availableWidth = breadcrumbContainer.parentElement.clientWidth - 40; // Etwas Puffer
+            
+            return testWidth > availableWidth;
         }
 
         // Intelligente Textkürzung die versucht sinnvolle Abkürzungen zu erstellen
@@ -2835,15 +2953,43 @@ you also can right click on a property to open a context menu with copy options.
                 treeContainer.querySelectorAll('.node').forEach(span => {
                     if (span.textContent.toLowerCase().includes(searchTerm)) nodesToProcess.push(span);
                 });
-            } else return;
+            }
 
-            if (showOnlyMatchesChecked && (nodesToProcess.length > 0 || searchTerm)) {
-                allLIs.forEach(li => { li.style.display = 'none'; });
+            // Wenn "Only Matches" eingeschaltet ist, berücksichtige auch den aktuell ausgewählten Node
+            var shouldHighlightPath = false;
+            if (showOnlyMatchesChecked) {
+                // Wenn ein Node bereits ausgewählt ist und kein spezifischer Suchterm, zeige den ausgewählten
+                if (!searchTerm && !nodesToDisplay && currentSelectedNode && nodesToProcess.length === 0) {
+                    nodesToProcess = [currentSelectedNode];
+                    shouldHighlightPath = true; // Markiere den ganzen Pfad gelb
+                }
+                
+                if (nodesToProcess.length > 0 || searchTerm) {
+                    allLIs.forEach(li => { li.style.display = 'none'; });
+                } else {
+                    // Kein Suchbegriff, keine Treffer, kein ausgewählter Node -> verstecke alles
+                    allLIs.forEach(li => { li.style.display = 'none'; });
+                    return;
+                }
+            }
+
+            // Wenn "Only Matches" ausgeschaltet ist und kein Suchbegriff, zeige alles und beende
+            if (!showOnlyMatchesChecked && !searchTerm && !nodesToDisplay) {
+                // Alle Nodes sichtbar machen (sind bereits durch Reset oben sichtbar)
+                return;
+            }
+
+            // Wenn keine Nodes zu verarbeiten sind, beende hier 
+            if (nodesToProcess.length === 0) {
+                return;
             }
 
             nodesToProcess.forEach(nodeSpan => {
                 // Only highlight the node itself if not in path-only mode
-                if (!highlightOnlyPath) {
+                if (!highlightOnlyPath && !shouldHighlightPath) {
+                    nodeSpan.style.backgroundColor = 'yellow';
+                } else if (shouldHighlightPath) {
+                    // Für ausgewählten Node beim "Only Matches": markiere den ganzen Pfad
                     nodeSpan.style.backgroundColor = 'yellow';
                 }
                 var current = nodeSpan.closest('li');
@@ -2866,7 +3012,7 @@ you also can right click on a property to open a context menu with copy options.
                         parentUl.style.display = '';
                         current = parentUl.closest('li');
                         // Highlight parent nodes in the path
-                        if (current && highlightOnlyPath) {
+                        if (current && (highlightOnlyPath || shouldHighlightPath)) {
                             const parentNode = current.querySelector(':scope > .node');
                             if (parentNode) {
                                 parentNode.style.backgroundColor = 'yellow';
