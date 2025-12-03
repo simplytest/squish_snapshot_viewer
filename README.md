@@ -46,18 +46,50 @@ wget https://raw.githubusercontent.com/simplytest/squish_snapshot_viewer/master/
 - The application runs completely locally in the browser; no data is transmitted.
 - For feedback or questions, see the Help popup.
 
-## Latest Updates
+## Release Notes
 
-- **Interactive Breadcrumb**: Navigate the element hierarchy with an intelligent breadcrumb showing the path to selected elements. Features smart text truncation and responsive design.
-- **Resizable Splitter**: Adjust the width of the Object Tree panel by dragging the splitter.
-- **Enhanced Context Menus**: Right-click on the element overlay in the screenshot to access node actions. Property context menu now includes node actions. Added "Copy Path" option.
-- **Tree Navigation**: Added button to expand/collapse all nodes.
-- **Selection**: Improved element selection and highlighting behavior.
-- Harmonized UI spacing
-- Implemented overlay recalculation on window resize
-- Added BasePage element menu generation
-- Improved navigation with automatic scrolling to highlighted elements
-- Enhanced element selection highlighting
+### v1.5.0
+- New. Interactive Navigation Breadcrumb with hierarchical path display
+- New. Smart text truncation for breadcrumb elements using CamelCase intelligence
+- New. Responsive breadcrumb design adapting to available screen space
+- New. Improved "Only Matches" filter behavior with better tree visibility control
+- Fix. Breadcrumb layout stability when selecting root elements
+
+### v1.4.0
+- New. Resizable Splitter for Object Tree
+- New. Context menu for element overlay
+- New. Extended properties context menu with node actions
+- New. Added Expand/Collapse All button for Object Tree
+- New. Added "Copy Path" to context menus
+- Fix. Improved element selection and highlighting behavior
+
+### v1.3.0
+- Fix. Harmonized UI spacing
+- Fix. Implemented overlay recalculation on window resize
+- New. Added BasePage element menu generation with recurision to parent if more then one container found
+- New. Improved navigation with automatic scrolling to highlighted elements in object tree
+- New. Enhanced element selection highlighting
+
+### v1.2.1
+- New. Zoom factor check boxes and theme are now persistent
+
+### v1.2.0
+- New. Added Help page with self-contained Base64 pictures
+
+### v1.1.2
+- New. Added zoom factor for pictures and overlays
+- New. Added File List collapsable
+
+### v1.1.1
+- Fix. Scrollable card areas
+- Fix. Better height handling
+- New. Added themes support
+
+### v1.1.0
+- Fix. Layout improvements
+
+### v1.0.0
+- New. Initial version with Object Tree, Snapshot view, and Properties
 
 ---
 
